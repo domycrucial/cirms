@@ -1,0 +1,627 @@
+/* ============================================================
+   CIRMS – Campus Cyber Incident Reporting & Management System
+   public/css/cirms.css
+   Design: dark-nav, clean white content area, cyber-accented
+   Fonts: Space Mono (headings/code) + DM Sans (body)
+   ============================================================ */
+
+/* ── CSS Variables ───────────────────────────────────────── */
+:root {
+  --navy:      #0d1b2a;
+  --navy-mid:  #1b2d3f;
+  --navy-soft: #233447;
+  --cyan:      #00d4ff;
+  --cyan-dim:  #00aacc;
+  --white:     #f8fafc;
+  --muted:     #8899aa;
+  --border:    #dde3ea;
+  --bg:        #f0f4f8;
+  --card-bg:   #ffffff;
+
+  /* Severity */
+  --low:      #22c55e;
+  --medium:   #f59e0b;
+  --high:     #f97316;
+  --critical: #ef4444;
+
+  /* Status */
+  --status-new:      #6366f1;
+  --status-ack:      #0ea5e9;
+  --status-progress: #f59e0b;
+  --status-resolved: #22c55e;
+  --status-closed:   #94a3b8;
+
+  --radius:  8px;
+  --shadow:  0 2px 12px rgba(0,0,0,.08);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,.13);
+
+  font-size: 15px;
+}
+
+/* ── Reset & Base ────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: #1e293b;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── App Shell + Sidebar ─────────────────────────────────── */
+.cirms-shell {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+  position: relative;
+}
+
+.cirms-sidebar {
+  width: 270px;
+  background: var(--navy);
+  border-right: 1px solid var(--navy-soft);
+  box-shadow: 3px 0 18px rgba(0,0,0,.18);
+  padding: 1rem .9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  transition: width .2s ease, transform .25s ease, padding .2s ease;
+  z-index: 1040;
+  overflow-x: hidden;
+}
+
+.cirms-brand {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  text-decoration: none;
+  color: var(--white) !important;
+  font-family: 'Space Mono', monospace;
+  font-weight: 700;
+  font-size: 1.25rem;
+  letter-spacing: .06em;
+}
+
+.brand-icon {
+  width: 36px; height: 36px;
+  background: linear-gradient(135deg, var(--cyan) 0%, var(--cyan-dim) 100%);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  color: var(--navy);
+}
+
+.cirms-content-wrap {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  transition: margin-left .2s ease;
+}
+
+.sidebar-toggle {
+  border: 1px solid rgba(255,255,255,.18);
+  background: rgba(255,255,255,.06);
+  color: #dbe7f0;
+  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.sidebar-toggle:hover {
+  color: var(--cyan);
+  border-color: rgba(0,212,255,.35);
+}
+
+.sidebar-toggle-desktop {
+  align-self: flex-end;
+}
+
+.content-topbar {
+  display: none;
+  align-items: center;
+  gap: .7rem;
+  padding: .75rem 1rem;
+  background: var(--navy);
+  color: #dbe7f0;
+  border-bottom: 1px solid var(--navy-soft);
+}
+
+.content-topbar-title {
+  font-size: .9rem;
+  font-weight: 600;
+}
+
+.sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 23, .4);
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s ease;
+  z-index: 1035;
+}
+
+/* ── User Badge ──────────────────────────────────────────── */
+.user-badge {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  color: #dbe7f0;
+  font-size: .875rem;
+}
+
+.sidebar-user {
+  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 10px;
+  padding: .7rem .75rem;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+}
+
+.sidebar-link {
+  color: #c0ced9;
+  font-size: .88rem;
+  font-weight: 500;
+  text-decoration: none;
+  padding: .52rem .68rem;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  transition: background .15s, color .15s;
+}
+
+.sidebar-link i {
+  min-width: 1.1rem;
+}
+
+.sidebar-link:hover,
+.sidebar-link.active {
+  color: var(--cyan);
+  background: rgba(0,212,255,.09);
+}
+
+.sidebar-section-title {
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  color: #94a3b8;
+  text-transform: uppercase;
+  margin-top: .8rem;
+  margin-bottom: .2rem;
+}
+
+.sidebar-logout {
+  margin-top: auto;
+}
+
+/* Desktop minimized state */
+.cirms-shell.sidebar-collapsed .cirms-sidebar {
+  width: 86px;
+  padding-left: .55rem;
+  padding-right: .55rem;
+}
+
+.cirms-shell.sidebar-collapsed .brand-text,
+.cirms-shell.sidebar-collapsed .sidebar-user,
+.cirms-shell.sidebar-collapsed .sidebar-section-title,
+.cirms-shell.sidebar-collapsed .sidebar-link span,
+.cirms-shell.sidebar-collapsed .sidebar-logout span {
+  display: none;
+}
+
+.cirms-shell.sidebar-collapsed .sidebar-link {
+  justify-content: center;
+}
+
+.cirms-shell.sidebar-collapsed .sidebar-link i,
+.cirms-shell.sidebar-collapsed .sidebar-logout i {
+  margin-right: 0 !important;
+}
+
+.role-chip {
+  font-size: .7rem;
+  font-weight: 700;
+  font-family: 'Space Mono', monospace;
+  letter-spacing: .05em;
+  padding: .15rem .45rem;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.role-admin    { background: rgba(239,68,68,.2);  color: #fca5a5; }
+.role-officer  { background: rgba(0,212,255,.15); color: var(--cyan); }
+.role-reporter { background: rgba(99,102,241,.2); color: #a5b4fc; }
+
+/* ── Main Content ────────────────────────────────────────── */
+.cirms-main {
+  flex: 1 0 auto;
+  padding: 1.75rem 1.5rem 2rem;
+}
+
+/* ── Page Header ─────────────────────────────────────────── */
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid var(--border);
+}
+
+.page-title {
+  font-family: 'Space Mono', monospace;
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: var(--navy);
+}
+
+.page-subtitle {
+  font-size: .875rem;
+  color: var(--muted);
+  margin-top: .15rem;
+}
+
+/* ── Cards ───────────────────────────────────────────────── */
+.cirms-card {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  padding: 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.cirms-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.cirms-card-title {
+  font-family: 'Space Mono', monospace;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--navy);
+}
+
+/* ── Stat Cards (Dashboard) ──────────────────────────────── */
+.stat-card {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: box-shadow .2s, transform .2s;
+}
+
+.stat-card:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+
+.stat-icon {
+  width: 52px; height: 52px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.stat-icon.cyan    { background: rgba(0,212,255,.12); color: var(--cyan-dim); }
+.stat-icon.red     { background: rgba(239,68,68,.12); color: var(--critical); }
+.stat-icon.amber   { background: rgba(245,158,11,.12);color: var(--medium); }
+.stat-icon.green   { background: rgba(34,197,94,.12); color: var(--low); }
+
+.stat-value {
+  font-family: 'Space Mono', monospace;
+  font-size: 1.9rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--navy);
+}
+
+.stat-label {
+  font-size: .8rem;
+  color: var(--muted);
+  font-weight: 500;
+  margin-top: .2rem;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+/* ── Badges ──────────────────────────────────────────────── */
+.badge-low      { background: rgba(34,197,94,.15);  color: #16a34a; border: 1px solid rgba(34,197,94,.3); }
+.badge-medium   { background: rgba(245,158,11,.15); color: #b45309; border: 1px solid rgba(245,158,11,.3);}
+.badge-high     { background: rgba(249,115,22,.15); color: #c2410c; border: 1px solid rgba(249,115,22,.3);}
+.badge-critical { background: rgba(239,68,68,.15);  color: #b91c1c; border: 1px solid rgba(239,68,68,.3); }
+
+.status-new      { background: rgba(99,102,241,.12); color: #4338ca; border: 1px solid rgba(99,102,241,.25); }
+.status-ack      { background: rgba(14,165,233,.12); color: #0369a1; border: 1px solid rgba(14,165,233,.25);}
+.status-progress { background: rgba(245,158,11,.12); color: #b45309; border: 1px solid rgba(245,158,11,.25);}
+.status-resolved { background: rgba(34,197,94,.12);  color: #16a34a; border: 1px solid rgba(34,197,94,.25); }
+.status-closed   { background: rgba(148,163,184,.12);color: #64748b; border: 1px solid rgba(148,163,184,.25);}
+
+.badge, .status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  padding: .22rem .6rem;
+  border-radius: 5px;
+  font-size: .78rem;
+  font-weight: 700;
+  font-family: 'Space Mono', monospace;
+  letter-spacing: .03em;
+  white-space: nowrap;
+}
+
+/* ── Tables ──────────────────────────────────────────────── */
+.cirms-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+
+.cirms-table th {
+  background: var(--bg);
+  color: var(--muted);
+  font-size: .75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  padding: .7rem 1rem;
+  border-bottom: 2px solid var(--border);
+}
+
+.cirms-table td {
+  padding: .9rem 1rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+  font-size: .875rem;
+}
+
+.cirms-table tbody tr { transition: background .12s; }
+.cirms-table tbody tr:hover { background: #f8fafc; }
+.cirms-table tbody tr:last-child td { border-bottom: none; }
+
+/* ── Forms ───────────────────────────────────────────────── */
+.form-label {
+  font-weight: 600;
+  font-size: .875rem;
+  color: #374151;
+  margin-bottom: .35rem;
+}
+
+.form-control, .form-select {
+  border-radius: 7px;
+  border: 1.5px solid var(--border);
+  font-size: .9rem;
+  padding: .55rem .85rem;
+  transition: border-color .15s, box-shadow .15s;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: var(--cyan-dim);
+  box-shadow: 0 0 0 3px rgba(0,212,255,.12);
+  outline: none;
+}
+
+.form-hint {
+  font-size: .78rem;
+  color: var(--muted);
+  margin-top: .3rem;
+}
+
+/* ── Buttons ─────────────────────────────────────────────── */
+.btn-cirms {
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 600;
+  font-size: .875rem;
+  padding: .5rem 1.2rem;
+  border-radius: 7px;
+  border: none;
+  cursor: pointer;
+  transition: background .15s, transform .1s, box-shadow .15s;
+}
+
+.btn-cirms:active { transform: scale(.97); }
+
+.btn-primary-cirms {
+  background: linear-gradient(135deg, var(--cyan-dim), var(--navy-mid));
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(0,170,204,.25);
+}
+
+.btn-primary-cirms:hover { box-shadow: 0 4px 16px rgba(0,170,204,.35); filter: brightness(1.1); }
+
+.btn-danger-cirms  { background: var(--critical); color: #fff; }
+.btn-success-cirms { background: var(--low);      color: #fff; }
+.btn-muted-cirms   { background: var(--border);   color: #374151; }
+
+/* ── Reference Number ────────────────────────────────────── */
+.ref-number {
+  font-family: 'Space Mono', monospace;
+  font-size: .85rem;
+  color: var(--navy-mid);
+  font-weight: 700;
+  letter-spacing: .04em;
+}
+
+/* ── SLA Indicator ───────────────────────────────────────── */
+.sla-ok      { color: var(--low);      font-weight: 600; }
+.sla-warning { color: var(--medium);   font-weight: 600; }
+.sla-breach  { color: var(--critical); font-weight: 600; }
+
+/* ── Login / Auth Pages ──────────────────────────────────── */
+/* Full-viewport panel behind the white card (login, register, etc.) */
+.auth-wrapper {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 60%, #0e2a38 100%);
+  padding: 2rem;
+}
+
+/* Centered card: keeps form readable on all screen sizes */
+.auth-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 2.5rem 2.25rem;
+  max-width: 440px;
+  width: 100%;
+  box-shadow: 0 16px 48px rgba(0,0,0,.35);
+}
+
+/* Wider card when the form has more fields (e.g. registration) */
+.auth-card-wide {
+  max-width: 500px;
+}
+
+/* Short intro paragraph on register / similar pages */
+.auth-intro {
+  font-size: 0.85rem;
+}
+
+.auth-error-list {
+  font-size: 0.875rem;
+}
+
+/* Page title on auth screens — matches dashboard “Space Mono + navy” look */
+.auth-heading {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--navy);
+}
+
+/* Short line under the title */
+.auth-lead {
+  font-size: 0.85rem;
+}
+
+/* Error banner: slightly smaller type so the card stays compact */
+.auth-alert {
+  font-size: 0.875rem;
+}
+
+/* Primary action: brand navy + mono label (same family as CIRMS logo) */
+.auth-submit {
+  font-family: 'Space Mono', monospace;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  background: var(--navy);
+  border: none;
+}
+
+.auth-submit:hover {
+  background: var(--navy-mid);
+}
+
+/* “No account?” row */
+.auth-footer-text {
+  font-size: 0.82rem;
+}
+
+.auth-register-link {
+  color: var(--cyan-dim);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.auth-register-link:hover {
+  color: var(--cyan);
+  text-decoration: underline;
+}
+
+.auth-logo {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  margin-bottom: 1.75rem;
+}
+
+.auth-logo-icon {
+  width: 44px; height: 44px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--navy), var(--navy-mid));
+  display: flex; align-items: center; justify-content: center;
+  color: var(--cyan);
+  font-size: 1.3rem;
+}
+
+.auth-logo-text {
+  font-family: 'Space Mono', monospace;
+  font-weight: 700;
+  font-size: 1.2rem;
+  color: var(--navy);
+}
+
+.auth-logo-sub {
+  font-size: .72rem;
+  color: var(--muted);
+  display: block;
+  font-family: 'DM Sans', sans-serif;
+  line-height: 1.1;
+}
+
+/* ── Alert / Flash ───────────────────────────────────────── */
+.alert-wrapper .alert {
+  border-radius: var(--radius);
+  font-size: .9rem;
+}
+
+/* ── Footer ──────────────────────────────────────────────── */
+.cirms-footer {
+  background: var(--navy);
+  border-top: 1px solid var(--navy-soft);
+  color: var(--muted);
+  padding: .85rem 0;
+  font-size: .8rem;
+}
+
+/* ── Utility ─────────────────────────────────────────────── */
+.mono { font-family: 'Space Mono', monospace; }
+.text-cyan { color: var(--cyan-dim); }
+.text-navy { color: var(--navy); }
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .content-topbar { display: flex; }
+  .cirms-sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 270px;
+    transform: translateX(-100%);
+    height: 100vh;
+    border-right: 1px solid var(--navy-soft);
+  }
+  .cirms-shell.sidebar-open .cirms-sidebar { transform: translateX(0); }
+  .cirms-shell.sidebar-open .sidebar-backdrop { opacity: 1; pointer-events: auto; }
+  .sidebar-toggle-desktop { display: none; }
+  .cirms-main { padding: 1rem .75rem; }
+  .page-header { flex-direction: column; align-items: flex-start; gap: .75rem; }
+  .stat-value { font-size: 1.5rem; }
+}

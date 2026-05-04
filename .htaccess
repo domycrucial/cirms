@@ -1,0 +1,75 @@
+# ============================================================
+# CIRMS – Apache Security Configuration
+# Place this file in the CIRMS root directory (cirms/.htaccess)
+# ============================================================
+
+Options -Indexes
+ServerSignature Off
+
+# ── Block direct access to sensitive directories ─────────────
+RewriteEngine On
+
+# Block config, includes, modules, database, storage
+RewriteRule ^(config|includes|modules|database|storage)(/|$) - [F,L]
+
+# Block hidden files (.env, .git, etc.)
+RewriteRule (^|/)\.(?!well-known) - [F,L]
+
+# ── Security Headers ─────────────────────────────────────────
+<IfModule mod_headers.c>
+    # Prevent clickjacking
+    Header always set X-Frame-Options "SAMEORIGIN"
+
+    # Prevent MIME type sniffing
+    Header always set X-Content-Type-Options "nosniff"
+
+    # XSS Protection (legacy browsers)
+    Header always set X-XSS-Protection "1; mode=block"
+
+    # Referrer policy
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+    # Content Security Policy
+    Header always set Content-Security-Policy "default-src 'self'; \
+        script-src 'self' https://cdn.jsdelivr.net https://fonts.googleapis.com 'unsafe-inline'; \
+        style-src 'self' https://cdn.jsdelivr.net https://fonts.googleapis.com https://fonts.gstatic.com 'unsafe-inline'; \
+        font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net; \
+        img-src 'self' data:; \
+        connect-src 'self'; \
+        frame-ancestors 'self';"
+
+    # HSTS (enable once HTTPS is confirmed working)
+    # Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+
+    # Remove server version info
+    Header unset X-Powered-By
+    Header always unset X-Powered-By
+</IfModule>
+
+# ── PHP Settings ─────────────────────────────────────────────
+<IfModule mod_php.c>
+    # Don't expose PHP version
+    php_flag expose_php off
+
+    # Session security
+    php_value session.cookie_httponly 1
+    php_value session.cookie_samesite Strict
+    php_value session.use_strict_mode 1
+
+    # File uploads
+    php_value upload_max_filesize 10M
+    php_value post_max_size 12M
+    php_value max_execution_time 30
+</IfModule>
+
+# ── Force HTTPS (uncomment in production) ────────────────────
+# RewriteCond %{HTTPS} off
+# RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# ── Deny access to SQL and backup files ──────────────────────
+<FilesMatch "\.(sql|bak|log|env|ini|conf)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Upload hardening: use storage/uploads/.htaccess (Directory blocks are not allowed here).

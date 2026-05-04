@@ -1,0 +1,4 @@
+# If this folder is ever under the document root, block script execution (Apache 2.4+).
+<FilesMatch "(?i)\.(php|phtml|php3|phar)$">
+    Require all denied
+</FilesMatch>
