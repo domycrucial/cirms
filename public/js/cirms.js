@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('incidentForm');
     if (!form) return;
 
-    form.addEventListener('submit', function (e) {
+    form.addEventListener('submit', function (e) { 
         let valid = true;
         const errors = [];
 

@@ -9,7 +9,9 @@ ServerSignature Off
 # ── Block direct access to sensitive directories ─────────────
 RewriteEngine On
 
-# Block config, includes, modules, database, storage
+# Block config, includes, modules, database, storage (except for the download script)
+RewriteCond %{REQUEST_URI} !^/modules/incidents/download\.php$
+RewriteCond %{REQUEST_URI} !^/cirmsv2/modules/incidents/download\.php$
 RewriteRule ^(config|includes|modules|database|storage)(/|$) - [F,L]
 
 # Block hidden files (.env, .git, etc.)
@@ -34,7 +36,7 @@ RewriteRule (^|/)\.(?!well-known) - [F,L]
         script-src 'self' https://cdn.jsdelivr.net https://fonts.googleapis.com 'unsafe-inline'; \
         style-src 'self' https://cdn.jsdelivr.net https://fonts.googleapis.com https://fonts.gstatic.com 'unsafe-inline'; \
         font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net; \
-        img-src 'self' data:; \
+        img-src 'self' data: https://res.cloudinary.com; \
         connect-src 'self'; \
         frame-ancestors 'self';"
 
@@ -57,7 +59,7 @@ RewriteRule (^|/)\.(?!well-known) - [F,L]
     php_value session.use_strict_mode 1
 
     # File uploads
-    php_value upload_max_filesize 10M
+    php_value upload_max_filesize 5M
     php_value post_max_size 12M
     php_value max_execution_time 30
 </IfModule>

@@ -59,6 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="<?= APP_URL ?>/public/assets/images/cirms.png">
     <title>Login – CIRMS</title>
 
     <?php require __DIR__ . '/../includes/head_assets.php'; ?>
@@ -69,7 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <!-- Logo -->
         <div class="auth-logo">
-            <div class="auth-logo-icon"><i class="bi bi-shield-lock-fill"></i></div>
+            <div class="auth-logo-icon"><img src="<?= APP_URL ?>/public/assets/images/cirms_logo.png" style="width: 100%; height: 100%; object-fit: cover; border-radius: 10px;" alt="Logo"></div>
             <div>
                 <div class="auth-logo-text">CIRMS</div>
                 <span class="auth-logo-sub">Campus Cyber Incident Reporting System</span>

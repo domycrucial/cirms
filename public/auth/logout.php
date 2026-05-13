@@ -22,5 +22,5 @@ if (ini_get('session.use_cookies')) {
 }
 session_destroy();
 
-header('Location: ' . APP_URL . '/public/login.php');
+header('Location: ' . APP_URL . '/public/index.php');
 exit;

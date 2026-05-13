@@ -20,6 +20,8 @@ $role  = $user['role'] ?? '';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="<?= APP_URL ?>/public/assets/images/cirms.png">
+    <link rel="stylesheet" href="<?= APP_URL ?>/public/css/landing.css">
     <meta name="robots" content="noindex, nofollow">
     <title><?= e($pageTitle ?? 'CIRMS') ?> – CIRMS</title>
 
@@ -40,9 +42,8 @@ $isActive = static function (string $path) use ($scriptPath): string {
             <i class="bi bi-layout-sidebar-inset"></i>
         </button>
 
-        <a class="cirms-brand" href="<?= APP_URL ?>/public/dashboard.php">
-            <span class="brand-icon"><i class="bi bi-shield-lock-fill"></i></span>
-            <span class="brand-text">CIRMS</span>
+        <a href="<?= APP_URL ?>/" class="landing-brand">
+            <img src="<?= APP_URL ?>/public/assets/images/cirms_logo.png" alt="CIRMS Logo" class="landing-brand-logo"> CIRMS
         </a>
 
         <div class="sidebar-user">

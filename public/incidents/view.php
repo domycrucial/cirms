@@ -1,111 +1,272 @@
 <?php
 // ============================================================
-// CIRMS – View Incident Detail
-// public/incidents/view.php
+// FILE:    public/incidents/view.php
+// PURPOSE: View and manage a single incident.
+//          Shows incident details, notes, attachments, timeline.
+//          Officers/admins can update status, assign officers,
+//          and add notes. Three emails are triggered here:
+//
+//   EMAIL 1 → Reporter (on status change)
+//             Function: notify_status_change()
+//             Trigger:  Officer/admin saves a new status value
+//             Contains: new status + personalised guidance text
+//
+//   EMAIL 2 → Assigned IT Officer (on assignment change)
+//             Function: notify_officer_assigned()
+//             Trigger:  Admin selects an officer in the dropdown
+//                       AND the assigned_to value actually changes
+//             Contains: severity, SLA deadline, Open button
+//
+//   EMAIL 3 → Reporter (on public note)
+//             Function: notify_note_added()
+//             Trigger:  Officer adds a note with is_internal = 0
+//             NOTE:     Internal notes (is_internal = 1) send NO email
+//             Contains: reference + "log in to read" message
 // ============================================================
 
 require_once __DIR__ . '/../../includes/functions.php';
+
+// Load mailer.php — required for all three notify_* calls below
+require_once __DIR__ . '/../../modules/notifications/mailer.php';
+
 session_start_secure();
 require_login();
 
 $pdo  = db();
 $user = current_user();
-$id   = (int)($_GET['id'] ?? 0);
+$id   = (int)($_GET['id'] ?? 0); // incident ID from URL ?id=
 
+// ── Fetch the incident with all related data ──────────────────
+// Joins categories, reporter (user), and assigned officer tables
 $stmt = $pdo->prepare("
-    SELECT i.*, c.name AS category_name,
-           u.full_name AS reporter_name, u.email AS reporter_email,
-           a.full_name AS assigned_name
-    FROM incidents i
-    JOIN categories c ON c.id = i.category_id
-    JOIN users u ON u.id = i.reporter_id
-    LEFT JOIN users a ON a.id = i.assigned_to
-    WHERE i.id = ?
+    SELECT i.*,
+           c.name      AS category_name,
+           u.full_name AS reporter_name,
+           u.email     AS reporter_email,
+           a.full_name AS assigned_name,
+           a.email     AS assigned_email
+    FROM   incidents i
+    JOIN   categories c ON c.id  = i.category_id
+    JOIN   users u      ON u.id  = i.reporter_id
+    LEFT JOIN users a   ON a.id  = i.assigned_to
+    WHERE  i.id = ?
 ");
 $stmt->execute([$id]);
 $inc = $stmt->fetch();
 
+// Return 404 if the incident ID doesn't exist in DB
 if (!$inc) {
     http_response_code(404);
     die(render_error(404, 'Incident not found.'));
 }
 
-// Reporters may only view their own incidents
+// Reporters can only view their own incidents — block access to others
 if ($user['role'] === 'reporter' && $inc['reporter_id'] != $user['id']) {
     http_response_code(403);
     die(render_error(403, 'Access denied.'));
 }
 
-// ── Handle POST: status update or add note ───────────────────
+// ── Handle POST actions (officers and admins only) ────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    verify_csrf();
-    require_login(['officer', 'admin']);
+
+    verify_csrf();                        // reject invalid CSRF tokens
+    require_login(['officer', 'admin']);  // reporters cannot POST here
 
     $action = $_POST['action'] ?? '';
 
+    // ══════════════════════════════════════════════════════════
+    //  ACTION 1: update_status
+    //  Handles both status change AND officer assignment in one
+    //  POST because both controls are on the same form.
+    // ══════════════════════════════════════════════════════════
     if ($action === 'update_status') {
-        $newStatus     = $_POST['status'] ?? '';
-        $assignedTo    = (int)($_POST['assigned_to'] ?? 0) ?: null;
-        $validStatuses = ['New','Acknowledged','In Progress','Resolved','Closed'];
+
+        $newStatus     = $_POST['status']             ?? '';
+        $assignedTo    = (int)($_POST['assigned_to']  ?? 0) ?: null;
+
+        // Only allow these exact status values — reject anything else
+        $validStatuses = ['New', 'Acknowledged', 'In Progress', 'Resolved', 'Closed'];
 
         if (in_array($newStatus, $validStatuses, true)) {
-            $extra = [];
-            if ($newStatus === 'Resolved') $extra['resolved_at'] = date('Y-m-d H:i:s');
-            if ($newStatus === 'Closed')   $extra['closed_at']   = date('Y-m-d H:i:s');
 
+            // Remember who was assigned BEFORE this update
+            // so we can detect if the assignment actually changed
+            $previousAssignedTo = $inc['assigned_to'] ?? null;
+
+            // Set resolved_at timestamp when status moves to Resolved
+            $resolvedAt = ($newStatus === 'Resolved') ? date('Y-m-d H:i:s') : null;
+
+            // Set closed_at timestamp when status moves to Closed
+            $closedAt   = ($newStatus === 'Closed')   ? date('Y-m-d H:i:s') : null;
+
+            // ── Update the incident row in the database ────────
+            // COALESCE keeps existing timestamps if not setting new ones
             $pdo->prepare("
                 UPDATE incidents
-                SET status = ?, assigned_to = ?,
-                    resolved_at = COALESCE(?, resolved_at),
-                    closed_at   = COALESCE(?, closed_at)
-                WHERE id = ?
+                SET    status      = ?,
+                       assigned_to = ?,
+                       resolved_at = COALESCE(?, resolved_at),
+                       closed_at   = COALESCE(?, closed_at)
+                WHERE  id = ?
             ")->execute([
-                $newStatus, $assignedTo,
-                $extra['resolved_at'] ?? null,
-                $extra['closed_at']   ?? null,
-                $id
+                $newStatus,
+                $assignedTo,
+                $resolvedAt,
+                $closedAt,
+                $id,
             ]);
 
+            // Record every status transition in the immutable audit log
             audit_log('incident.status_changed', 'incident', $id, [
-                'from' => $inc['status'], 'to' => $newStatus
+                'from' => $inc['status'],
+                'to'   => $newStatus,
             ]);
-            flash('success', "Incident status updated to \"$newStatus\".");
+
+            // ── EMAIL 1: Notify reporter of status change ──────
+            //
+            // Only fires when the status VALUE actually changed.
+            // If the admin only changed the assigned officer without
+            // changing the status, no email goes to the reporter.
+            //
+            // notify_status_change() is in mailer.php.
+            // It builds a status-specific guidance message so the
+            // reporter knows what the new status means for them.
+            if ($newStatus !== $inc['status']) {
+                notify_status_change(
+                    $inc['reporter_email'],   // reporter's email from DB
+                    $inc['reporter_name'],    // reporter's name from DB
+                    [
+                        'id'        => $id,
+                        'reference' => $inc['reference'],
+                        'title'     => $inc['title'],
+                    ],
+                    $newStatus                // the new status string
+                );
+            }
+
+            // ── EMAIL 2: Notify assigned IT officer ────────────
+            //
+            // Only fires when the assigned_to value actually changed
+            // AND a real officer was selected (not "Unassigned" / null).
+            //
+            // notify_officer_assigned() is in mailer.php.
+            // It tells the officer they own this incident and
+            // shows their SLA deadline.
+            if ($assignedTo && $assignedTo !== (int)$previousAssignedTo) {
+
+                // Fetch the newly assigned officer's name and email
+                $officerRow = $pdo->prepare(
+                    "SELECT full_name, email FROM users WHERE id = ? LIMIT 1"
+                );
+                $officerRow->execute([$assignedTo]);
+                $officer = $officerRow->fetch();
+
+                if ($officer) {
+                    notify_officer_assigned(
+                        $officer['email'],     // assigned officer's email
+                        $officer['full_name'], // assigned officer's name
+                        [
+                            'id'        => $id,
+                            'reference' => $inc['reference'],
+                            'title'     => $inc['title'],
+                            'severity'  => $inc['severity'],
+                            'category'  => $inc['category_name'],
+                        ]
+                    );
+                }
+            }
+
+            flash('success', "Status updated to \"{$newStatus}\". Reporter has been notified by email.");
         }
     }
 
+    // ══════════════════════════════════════════════════════════
+    //  ACTION 2: add_note
+    //  Saves a note to the notes table.
+    //  PUBLIC notes  (is_internal = 0) → email sent to reporter
+    //  INTERNAL notes (is_internal = 1) → no email, officers only
+    // ══════════════════════════════════════════════════════════
     if ($action === 'add_note') {
-        $body       = trim($_POST['note_body'] ?? '');
+
+        $noteBody   = trim($_POST['note_body'] ?? '');
+        // is_internal = 1 if checkbox is checked, 0 if not checked
         $isInternal = isset($_POST['is_internal']) ? 1 : 0;
-        if (strlen($body) >= 5) {
+
+        // Require at least 5 characters — reject blank/very short notes
+        if (strlen($noteBody) >= 5) {
+
+            // Insert the note into the notes table
             $pdo->prepare("
                 INSERT INTO notes (incident_id, author_id, body, is_internal)
-                VALUES (?,?,?,?)
-            ")->execute([$id, $user['id'], $body, $isInternal]);
+                VALUES (?, ?, ?, ?)
+            ")->execute([$id, $user['id'], $noteBody, $isInternal]);
+
             audit_log('incident.note_added', 'incident', $id);
-            flash('success', 'Note added.');
+
+            // ── EMAIL 3: Notify reporter about PUBLIC notes only ──
+            //
+            // is_internal = 0 means the reporter CAN see this note
+            // in their incident view. We email them to tell them
+            // to log in and read it.
+            //
+            // is_internal = 1 means the note is for IT staff eyes only.
+            // The reporter cannot see it and no email is sent.
+            //
+            // notify_note_added() is in mailer.php.
+            // It tells the reporter a note was posted but does NOT
+            // include the note text in the email — the reporter
+            // must log in to CIRMS to read it.
+            if ($isInternal === 0) {
+                notify_note_added(
+                    $inc['reporter_email'],
+                    $inc['reporter_name'],
+                    [
+                        'id'        => $id,
+                        'reference' => $inc['reference'],
+                    ]
+                );
+                flash('success', 'Note added. Reporter has been notified by email.');
+            } else {
+                // Internal note — no email, just a confirmation
+                flash('success', 'Internal note added — not visible to reporter, no email sent.');
+            }
         }
     }
 
-    redirect("/public/incidents/view.php?id=$id");
+    // Redirect back to this page (PRG pattern — prevents double-submit on refresh)
+    redirect("/public/incidents/view.php?id={$id}");
 }
 
-// ── Fetch notes & attachments ────────────────────────────────
+// ── Fetch notes ───────────────────────────────────────────────
+// Reporters only see public notes (is_internal = 0)
+// Officers and admins see ALL notes including internal ones
 $notesQuery = $user['role'] === 'reporter'
-    ? "SELECT n.*, u.full_name FROM notes n JOIN users u ON u.id=n.author_id WHERE n.incident_id=? AND n.is_internal=0 ORDER BY n.created_at ASC"
-    : "SELECT n.*, u.full_name FROM notes n JOIN users u ON u.id=n.author_id WHERE n.incident_id=? ORDER BY n.created_at ASC";
+    ? "SELECT n.*, u.full_name FROM notes n
+       JOIN users u ON u.id = n.author_id
+       WHERE n.incident_id = ? AND n.is_internal = 0
+       ORDER BY n.created_at ASC"
+    : "SELECT n.*, u.full_name FROM notes n
+       JOIN users u ON u.id = n.author_id
+       WHERE n.incident_id = ?
+       ORDER BY n.created_at ASC";
+
 $notesStmt = $pdo->prepare($notesQuery);
 $notesStmt->execute([$id]);
 $notes = $notesStmt->fetchAll();
 
+// Fetch evidence attachments for this incident
 $attStmt = $pdo->prepare("SELECT * FROM attachments WHERE incident_id = ?");
 $attStmt->execute([$id]);
 $attachments = $attStmt->fetchAll();
 
-// For assignment dropdown
+// Fetch officers and admins for the assignment dropdown (admin only)
 $officers = [];
 if ($user['role'] === 'admin') {
-    // Omit is_active in SQL so older `users` tables without that column still work.
-    $officers = $pdo->query("SELECT id, full_name FROM users WHERE role IN ('officer','admin') ORDER BY full_name")->fetchAll();
+    $officers = $pdo->query(
+        "SELECT id, full_name FROM users
+         WHERE  role IN ('officer','admin')
+         ORDER  BY full_name"
+    )->fetchAll();
 }
 
 $pageTitle = 'Incident ' . $inc['reference'];
@@ -125,18 +286,31 @@ include __DIR__ . '/../../includes/header.php';
     </a>
 </div>
 
+<!-- Flash message from POST redirect -->
+<?php $flash = get_flash(); if ($flash): ?>
+<div class="alert alert-<?= $flash['type'] === 'success' ? 'success' : 'danger' ?> mb-3">
+    <?= e($flash['message']) ?>
+</div>
+<?php endif; ?>
+
 <div class="row g-3">
 
-    <!-- ── Left: Main Details ─────────────────────────────── -->
+    <!-- ── Left column: incident details, attachments, notes ─── -->
     <div class="col-lg-8">
 
-        <!-- Details card -->
+        <!-- Incident detail card -->
         <div class="cirms-card">
             <div class="cirms-card-header">
                 <h2 class="cirms-card-title">Incident Details</h2>
                 <div class="d-flex gap-2">
-                    <span class="badge <?= severity_class($inc['severity']) ?>"><?= e($inc['severity']) ?></span>
-                    <span class="status-badge <?= status_class($inc['status']) ?>"><?= e($inc['status']) ?></span>
+                    <!-- Severity badge -->
+                    <span class="badge <?= severity_class($inc['severity']) ?>">
+                        <?= e($inc['severity']) ?>
+                    </span>
+                    <!-- Status badge -->
+                    <span class="status-badge <?= status_class($inc['status']) ?>">
+                        <?= e($inc['status']) ?>
+                    </span>
                 </div>
             </div>
 
@@ -160,6 +334,7 @@ include __DIR__ . '/../../includes/header.php';
                 <dd class="col-sm-8">
                     <?php if ($inc['sla_deadline']): ?>
                         <?php
+                        // Calculate time remaining; negative = SLA breach
                         $diff = strtotime($inc['sla_deadline']) - time();
                         $cls  = $diff < 0 ? 'sla-breach' : ($diff < 3600 ? 'sla-warning' : 'sla-ok');
                         ?>
@@ -170,31 +345,79 @@ include __DIR__ . '/../../includes/header.php';
                 </dd>
 
                 <dt class="col-sm-4 text-muted">Ongoing?</dt>
-                <dd class="col-sm-8"><?= $inc['is_ongoing'] ? '⚠️ Yes – still ongoing' : 'No – contained' ?></dd>
+                <dd class="col-sm-8">
+                    <?= $inc['is_ongoing'] ? '⚠️ Yes — still ongoing' : 'No — contained' ?>
+                </dd>
             </dl>
 
             <hr>
             <h6 class="fw-bold mb-2">Description</h6>
+            <!-- pre-wrap preserves line breaks in the description text -->
             <p style="white-space:pre-wrap;font-size:.9rem;"><?= e($inc['description']) ?></p>
         </div>
 
-        <!-- Attachments -->
+        <!-- Evidence attachments card — only shown if attachments exist -->
         <?php if ($attachments): ?>
         <div class="cirms-card">
             <div class="cirms-card-header">
-                <h2 class="cirms-card-title"><i class="bi bi-paperclip me-1"></i>Attachments</h2>
+                <h2 class="cirms-card-title">
+                    <i class="bi bi-paperclip me-1"></i>Evidence &amp; Attachments
+                </h2>
             </div>
+
+            <?php
+            // Separate image files for thumbnail preview section
+            $images = array_filter($attachments, fn($a) => str_starts_with($a['mime_type'], 'image/'));
+            ?>
+
+            <!-- Image thumbnails — only visible to officers and admins -->
+            <?php if ($images && in_array($user['role'], ['officer', 'admin'])): ?>
+            <div class="mb-4">
+                <h6 class="fw-bold mb-3"
+                    style="font-size:.85rem;color:var(--muted);text-transform:uppercase;">
+                    Image Evidence
+                </h6>
+                <div class="d-flex flex-wrap gap-3">
+                    <?php foreach ($images as $img): ?>
+                    <a href="<?= APP_URL ?>/modules/incidents/download.php?id=<?= $img['id'] ?>&action=view"
+                       target="_blank" class="d-block border rounded p-1"
+                       style="background:#f8fafc;" title="Click to view full image">
+                        <img src="<?= APP_URL ?>/modules/incidents/download.php?id=<?= $img['id'] ?>&action=view"
+                             alt="<?= e($img['original']) ?>"
+                             style="max-height:120px;max-width:200px;object-fit:contain;border-radius:4px;">
+                    </a>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <!-- Full file list -->
+            <h6 class="fw-bold mb-2"
+                style="font-size:.85rem;color:var(--muted);text-transform:uppercase;">
+                All Files
+            </h6>
             <ul class="list-unstyled mb-0">
                 <?php foreach ($attachments as $att): ?>
                 <li class="d-flex align-items-center gap-2 py-2 border-bottom">
-                    <i class="bi bi-file-earmark text-muted"></i>
+                    <i class="bi bi-file-earmark-<?= str_starts_with($att['mime_type'], 'image/')
+                        ? 'image' : 'text' ?> text-muted"></i>
                     <span style="font-size:.875rem;"><?= e($att['original']) ?></span>
-                    <span class="text-muted" style="font-size:.78rem;"><?= format_bytes($att['size_bytes']) ?></span>
-                    <?php if (in_array($user['role'], ['officer','admin'])): ?>
-                    <a href="<?= APP_URL ?>/modules/incidents/download.php?id=<?= $att['id'] ?>"
-                       class="btn btn-sm btn-outline-secondary ms-auto">
-                        <i class="bi bi-download"></i>
-                    </a>
+                    <span class="text-muted" style="font-size:.78rem;">
+                        (<?= format_bytes($att['size_bytes']) ?>)
+                    </span>
+                    <?php if (in_array($user['role'], ['officer', 'admin'])): ?>
+                    <div class="ms-auto d-flex gap-1">
+                        <!-- View button opens file in new tab -->
+                        <a href="<?= APP_URL ?>/modules/incidents/download.php?id=<?= $att['id'] ?>&action=view"
+                           target="_blank" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-eye"></i> View
+                        </a>
+                        <!-- Download button triggers file download -->
+                        <a href="<?= APP_URL ?>/modules/incidents/download.php?id=<?= $att['id'] ?>"
+                           class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-download"></i>
+                        </a>
+                    </div>
                     <?php endif; ?>
                 </li>
                 <?php endforeach; ?>
@@ -202,98 +425,142 @@ include __DIR__ . '/../../includes/header.php';
         </div>
         <?php endif; ?>
 
-        <!-- Notes / Timeline -->
+        <!-- Notes / Activity log card -->
         <div class="cirms-card">
             <div class="cirms-card-header">
-                <h2 class="cirms-card-title"><i class="bi bi-chat-left-text me-1"></i>Activity Log</h2>
+                <h2 class="cirms-card-title">
+                    <i class="bi bi-chat-left-text me-1"></i>Activity Log
+                </h2>
             </div>
 
             <?php if (empty($notes)): ?>
-            <p class="text-muted" style="font-size:.875rem;">No notes yet.</p>
+                <p class="text-muted" style="font-size:.875rem;">No notes yet.</p>
             <?php else: ?>
-            <?php foreach ($notes as $note): ?>
-            <div class="mb-3 p-3 rounded" style="background:<?= $note['is_internal'] ? '#fff8e7' : '#f8fafc' ?>;border:1px solid <?= $note['is_internal'] ? '#fde68a' : '#dde3ea' ?>;">
-                <div class="d-flex justify-content-between mb-1">
-                    <strong style="font-size:.875rem;"><?= e($note['full_name']) ?></strong>
-                    <span class="text-muted" style="font-size:.78rem;"><?= date('d M Y H:i', strtotime($note['created_at'])) ?></span>
+                <?php foreach ($notes as $note): ?>
+                <!-- Internal notes get amber background, public notes get grey -->
+                <div class="mb-3 p-3 rounded"
+                     style="background:<?= $note['is_internal'] ? '#fff8e7' : '#f8fafc' ?>;
+                            border:1px solid <?= $note['is_internal'] ? '#fde68a' : '#dde3ea' ?>;">
+                    <div class="d-flex justify-content-between mb-1">
+                        <strong style="font-size:.875rem;"><?= e($note['full_name']) ?></strong>
+                        <span class="text-muted" style="font-size:.78rem;">
+                            <?= date('d M Y H:i', strtotime($note['created_at'])) ?>
+                        </span>
+                    </div>
+                    <!-- Show internal badge so officers know this is confidential -->
+                    <?php if ($note['is_internal']): ?>
+                        <span class="badge bg-warning text-dark mb-1" style="font-size:.7rem;">
+                            Internal Note
+                        </span>
+                    <?php endif; ?>
+                    <p class="mb-0" style="font-size:.875rem;white-space:pre-wrap;">
+                        <?= e($note['body']) ?>
+                    </p>
                 </div>
-                <?php if ($note['is_internal']): ?>
-                <span class="badge bg-warning text-dark mb-1" style="font-size:.7rem;">Internal Note</span>
-                <?php endif; ?>
-                <p class="mb-0" style="font-size:.875rem;white-space:pre-wrap;"><?= e($note['body']) ?></p>
-            </div>
-            <?php endforeach; ?>
+                <?php endforeach; ?>
             <?php endif; ?>
 
-            <!-- Add note form (officers/admins) -->
-            <?php if (in_array($user['role'], ['officer','admin'])): ?>
+            <!-- Add note form — shown only to officers and admins -->
+            <?php if (in_array($user['role'], ['officer', 'admin'])): ?>
             <hr>
             <form method="POST" action="">
                 <?= csrf_field() ?>
                 <input type="hidden" name="action" value="add_note">
+
                 <div class="mb-2">
                     <label for="note_body" class="form-label">Add Note</label>
                     <textarea id="note_body" name="note_body" class="form-control" rows="3"
-                              placeholder="Add an update, note, or action taken…" required></textarea>
+                              placeholder="Write an update or message for the reporter…"
+                              required></textarea>
                 </div>
+
                 <div class="d-flex align-items-center gap-3">
                     <div class="form-check">
-                        <input type="checkbox" id="is_internal" name="is_internal" class="form-check-input" checked>
+                        <!-- Internal note checkbox — checked by default for safety -->
+                        <input type="checkbox" id="is_internal" name="is_internal"
+                               class="form-check-input" checked>
                         <label for="is_internal" class="form-check-label" style="font-size:.85rem;">
-                            Internal note (not visible to reporter)
+                            Internal note
+                            <span class="text-muted" style="font-size:.78rem;">
+                                (hidden from reporter — no email sent)
+                            </span>
                         </label>
                     </div>
                     <button type="submit" class="btn btn-sm btn-dark ms-auto">
                         <i class="bi bi-send me-1"></i> Add Note
                     </button>
                 </div>
+                <!-- Reminder to officer about email behaviour -->
+                <p class="text-muted mt-1" style="font-size:.75rem;">
+                    <i class="bi bi-envelope me-1"></i>
+                    Uncheck "Internal note" to send the reporter an email notification.
+                </p>
             </form>
             <?php endif; ?>
         </div>
     </div>
 
-    <!-- ── Right: Actions ────────────────────────────────── -->
+    <!-- ── Right column: update panel + timeline ─────────────── -->
     <div class="col-lg-4">
-        <?php if (in_array($user['role'], ['officer','admin'])): ?>
+
+        <!-- Status/assignment update form — officers and admins only -->
+        <?php if (in_array($user['role'], ['officer', 'admin'])): ?>
         <div class="cirms-card">
             <div class="cirms-card-header">
                 <h2 class="cirms-card-title">Update Incident</h2>
             </div>
+
             <form method="POST" action="">
                 <?= csrf_field() ?>
                 <input type="hidden" name="action" value="update_status">
 
+                <!-- Status dropdown — current status pre-selected -->
                 <div class="mb-3">
                     <label class="form-label">Status</label>
                     <select name="status" class="form-select">
-                        <?php foreach (['New','Acknowledged','In Progress','Resolved','Closed'] as $s): ?>
-                        <option value="<?= $s ?>" <?= $inc['status'] === $s ? 'selected' : '' ?>><?= $s ?></option>
+                        <?php foreach (['New', 'Acknowledged', 'In Progress', 'Resolved', 'Closed'] as $s): ?>
+                        <option value="<?= $s ?>"
+                            <?= $inc['status'] === $s ? 'selected' : '' ?>>
+                            <?= $s ?>
+                        </option>
                         <?php endforeach; ?>
                     </select>
                 </div>
 
+                <!-- Officer assignment dropdown — admin only -->
                 <?php if ($user['role'] === 'admin' && $officers): ?>
                 <div class="mb-3">
-                    <label class="form-label">Assign To</label>
+                    <label class="form-label">Assign To IT Officer</label>
                     <select name="assigned_to" class="form-select">
                         <option value="">— Unassigned —</option>
                         <?php foreach ($officers as $o): ?>
-                        <option value="<?= $o['id'] ?>" <?= $inc['assigned_to'] == $o['id'] ? 'selected':'' ?>>
+                        <option value="<?= $o['id'] ?>"
+                            <?= $inc['assigned_to'] == $o['id'] ? 'selected' : '' ?>>
                             <?= e($o['full_name']) ?>
                         </option>
                         <?php endforeach; ?>
                     </select>
+                    <div class="form-hint" style="font-size:.75rem;">
+                        <i class="bi bi-envelope me-1"></i>
+                        The assigned officer will receive an email notification.
+                    </div>
                 </div>
                 <?php endif; ?>
 
                 <button type="submit" class="btn btn-dark w-100">
                     <i class="bi bi-arrow-repeat me-1"></i> Save Changes
                 </button>
+
+                <!-- Reminder about automatic reporter email -->
+                <p class="text-muted mt-2" style="font-size:.75rem;">
+                    <i class="bi bi-envelope me-1"></i>
+                    Status changes automatically email the reporter.
+                </p>
             </form>
         </div>
         <?php endif; ?>
 
-        <!-- Metadata summary -->
+        <!-- Incident timeline card -->
         <div class="cirms-card">
             <h2 class="cirms-card-title mb-3">Timeline</h2>
             <ul class="list-unstyled mb-0" style="font-size:.83rem;">
@@ -304,7 +571,9 @@ include __DIR__ . '/../../includes/header.php';
                 <?php if ($inc['resolved_at']): ?>
                 <li class="mb-2">
                     <span class="text-muted">Resolved:</span><br>
-                    <strong class="sla-ok"><?= date('d M Y H:i', strtotime($inc['resolved_at'])) ?></strong>
+                    <strong class="sla-ok">
+                        <?= date('d M Y H:i', strtotime($inc['resolved_at'])) ?>
+                    </strong>
                 </li>
                 <?php endif; ?>
                 <?php if ($inc['closed_at']): ?>
@@ -315,6 +584,7 @@ include __DIR__ . '/../../includes/header.php';
                 <?php endif; ?>
             </ul>
         </div>
+
     </div>
 </div>
 

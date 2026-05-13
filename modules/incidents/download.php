@@ -30,8 +30,11 @@ if (!file_exists($filePath)) {
 audit_log('attachment.downloaded', 'attachment', $id);
 
 // Serve the file safely
+$action = $_GET['action'] ?? 'download';
+$disposition = ($action === 'view') ? 'inline' : 'attachment';
+
 header('Content-Type: ' . $att['mime_type']);
-header('Content-Disposition: attachment; filename="' . addslashes($att['original']) . '"');
+header('Content-Disposition: ' . $disposition . '; filename="' . addslashes($att['original']) . '"');
 header('Content-Length: ' . filesize($filePath));
 header('X-Content-Type-Options: nosniff');
 

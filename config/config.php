@@ -5,14 +5,11 @@
 // ============================================================
 
 // ----- Database -----
-// Defaults match a typical XAMPP install: MySQL user "root", empty password.
-// Production: use a dedicated MySQL user (see database/grants_cirms_user.sql).
-// Optional overrides: copy config/config.local.example.php → config/config.local.php
 $dbSettings = [
     'host'    => 'localhost',
-    'name'    => 'schema',
+    'name'    => 'cirms_db',          // <-- change to your DB name if different
     'user'    => 'root',
-    'pass'    => '',
+    'pass'    => '',                // <-- blank = XAMPP default
     'charset' => 'utf8mb4',
 ];
 $__cirms_local = __DIR__ . '/config.local.php';
@@ -20,35 +17,27 @@ $__local       = [];
 if (is_file($__cirms_local)) {
     $loaded = require $__cirms_local;
     if (is_array($loaded)) {
-        $__local      = $loaded;
-        $dbKeys       = ['host', 'name', 'user', 'pass', 'charset'];
-        $dbSettings   = array_replace($dbSettings, array_intersect_key($loaded, array_flip($dbKeys)));
+        $__local    = $loaded;
+        $dbKeys     = ['host', 'name', 'user', 'pass', 'charset'];
+        $dbSettings = array_replace($dbSettings, array_intersect_key($loaded, array_flip($dbKeys)));
     }
 }
 
-// MySQL column on `users` that stores the bcrypt hash (must match your table; CIRMS schema uses `password`).
 $__pwCol = $__local['users_password_column'] ?? 'password';
 $__pwCol = is_string($__pwCol) && preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $__pwCol) ? $__pwCol : 'password';
 define('USERS_PASSWORD_COLUMN', $__pwCol);
 
-define('DB_HOST', $dbSettings['host']);
-define('DB_NAME', $dbSettings['name']);
-define('DB_USER', $dbSettings['user']);
-define('DB_PASS', $dbSettings['pass']);
+define('DB_HOST',    $dbSettings['host']);
+define('DB_NAME',    $dbSettings['name']);
+define('DB_USER',    $dbSettings['user']);
+define('DB_PASS',    $dbSettings['pass']);
 define('DB_CHARSET', $dbSettings['charset']);
 
 // ----- App -----
-define('APP_NAME', 'CIRMS');
+define('APP_NAME',      'CIRMS');
 define('APP_FULL_NAME', 'Campus Cyber Incident Reporting & Management System');
 
-/**
- * Base URL with no trailing slash: used for redirects, <link>, and <script src>.
- *
- * - Production: set $app_url_manual below to your full origin (e.g. https://cirms.example.edu).
- * - Local / subfolders: leave $app_url_manual empty so the app derives /your-folder from the
- *   request path (/your-folder/public/...). That way CSS/JS URLs match the real Apache path.
- */
-$app_url_manual = ''; // e.g. 'https://cirms.example.edu' — non-empty disables auto-detect
+$app_url_manual = ''; // Set to 'http://localhost/cirmsv2' if auto-detect fails
 if ($app_url_manual !== '') {
     define('APP_URL', rtrim($app_url_manual, '/'));
 } else {
@@ -63,32 +52,59 @@ if ($app_url_manual !== '') {
 }
 
 define('APP_VERSION', '1.0.0');
-define('TIMEZONE', 'Africa/Dar_es_Salaam');
+define('TIMEZONE',    'Africa/Dar_es_Salaam');
 
 // ----- Security -----
-define('BCRYPT_COST', 12);
-define('SESSION_LIFETIME', 1800);                  // 30 minutes
+define('BCRYPT_COST',       12);
+define('SESSION_LIFETIME',  1800);
 define('CSRF_TOKEN_LENGTH', 32);
 
 // ----- File Uploads -----
-define('UPLOAD_DIR', __DIR__ . '/../storage/uploads/');  // outside web root
-define('UPLOAD_MAX_MB', 10);
+define('UPLOAD_DIR',          __DIR__ . '/../storage/uploads/');
+define('UPLOAD_MAX_MB',       10);
 define('UPLOAD_ALLOWED_TYPES', [
     'image/jpeg', 'image/png', 'image/gif',
-    'application/pdf',
-    'text/plain',
+    'application/pdf', 'text/plain',
     'application/msword',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 ]);
 
-// ----- Email (PHPMailer) -----
-define('SMTP_HOST', 'smtp.university.ac');
-define('SMTP_PORT', 587);
-define('SMTP_USER', '');
-define('SMTP_PASS', '');
-define('SMTP_FROM', 'noreply@university.ac');
+// ============================================================
+// ----- Email / SMTP (PHPMailer) -----
+//
+// HOW TO CONFIGURE FOR GMAIL (step by step):
+//
+//   STEP 1 — Enable 2-Step Verification on your Google account:
+//            Go to: https://myaccount.google.com/security
+//            Click "2-Step Verification" and follow the steps.
+//
+//   STEP 2 — Generate a Gmail App Password:
+//            Go to: https://myaccount.google.com/apppasswords
+//            Select App: Mail, Device: Other → type "CIRMS"
+//            Click Generate → copy the 16-character code shown.    rugg vgxp edkq lqjf
+//            Example: "abcd efgh ijkl mnop"
+//
+//   STEP 3 — Fill in the values below:
+//            SMTP_USER = your full Gmail address
+//            SMTP_PASS = the 16-character App Password (with spaces is fine)
+//            SMTP_FROM = same as your Gmail address
+//            NOTIFY_IT_EMAIL = the IT officer email that receives new incident alerts
+//
+//   STEP 4 — Install PHPMailer:
+//            Open PowerShell in your project folder and run:
+//            composer require phpmailer/phpmailer
+//
+//   STEP 5 — Test it:
+//            In PowerShell: php modules/notifications/test_mail.php
+// ============================================================
+
+define('SMTP_HOST',      'smtp.gmail.com');     // Gmail SMTP server — do not change
+define('SMTP_PORT',      587);                  // 587 = STARTTLS (correct for Gmail)
+define('SMTP_USER',      'chuwadominic52@gmail.com');// <-- YOUR Gmail address here
+define('SMTP_PASS',      'rugg vgxp edkq lqjf');// <-- YOUR 16-char App Password here
+define('SMTP_FROM',      'chuwadominic52@gmail.com');// <-- same as SMTP_USER for Gmail
 define('SMTP_FROM_NAME', 'CIRMS Notifications');
-define('NOTIFY_IT_EMAIL', 'itsec@university.ac');
+define('NOTIFY_IT_EMAIL','godsplancharity255@gmail.com'); // <-- IT officer/team email
 
 // ----- SLA (hours by severity) -----
 define('SLA_HOURS', [
@@ -99,7 +115,7 @@ define('SLA_HOURS', [
 ]);
 
 // ----- Environment -----
-define('APP_ENV', 'development');    // 'production' in live deployment
+define('APP_ENV', 'development'); // Change to 'production' on live server
 
 if (APP_ENV === 'development') {
     ini_set('display_errors', 1);
