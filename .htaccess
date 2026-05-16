@@ -37,7 +37,7 @@ RewriteRule (^|/)\.(?!well-known) - [F,L]
         style-src 'self' https://cdn.jsdelivr.net https://fonts.googleapis.com https://fonts.gstatic.com 'unsafe-inline'; \
         font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net; \
         img-src 'self' data: https://res.cloudinary.com; \
-        connect-src 'self'; \
+        connect-src 'self' https://cdn.jsdelivr.net https://fonts.googleapis.com https://fonts.gstatic.com; \
         frame-ancestors 'self';"
 
     # HSTS (enable once HTTPS is confirmed working)

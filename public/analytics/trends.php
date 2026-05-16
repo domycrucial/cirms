@@ -1,6 +1,6 @@
 <?php
 // ============================================================
-// CIRMS – Trend Report
+// CIRMS – Trend Reports
 // public/analytics/trends.php
 // ============================================================
 
@@ -24,26 +24,64 @@ $monthly = $pdo->query("
 ")->fetchAll();
 
 // Build pivot: month → severity totals
-$months   = [];
-$pivoted  = [];
+$months  = [];
+$pivoted = [];
 foreach ($monthly as $r) {
     $months[$r['ym']] = $r['label'];
     $pivoted[$r['ym']][$r['severity']] = (int)$r['total'];
 }
-$monthLabels = array_values($months);
-$ymKeys      = array_keys($months);
+$monthLabels   = array_values($months);
+$ymKeys        = array_keys($months);
 
-$series = [
-    'Critical' => [], 'High' => [], 'Medium' => [], 'Low' => []
-];
+$series        = ['Critical' => [], 'High' => [], 'Medium' => [], 'Low' => []];
+$monthlyTotals = [];
 foreach ($ymKeys as $ym) {
     foreach ($series as $sev => &$arr) {
         $arr[] = $pivoted[$ym][$sev] ?? 0;
     }
+    $monthlyTotals[] = array_sum($pivoted[$ym] ?? []);
 }
 unset($arr);
 
-// Top affected systems
+// Summary KPIs
+$totalPeriod    = array_sum($monthlyTotals);
+$peakMonthLabel = '—';
+$peakMonthCount = 0;
+if (!empty($monthlyTotals)) {
+    $maxIdx         = array_search(max($monthlyTotals), $monthlyTotals);
+    $peakMonthLabel = $monthLabels[$maxIdx] ?? '—';
+    $peakMonthCount = $monthlyTotals[$maxIdx] ?? 0;
+}
+
+// By category (last 12 months)
+$byCat = $pdo->query("
+    SELECT c.name, COUNT(*) AS total
+    FROM incidents i
+    JOIN categories c ON c.id = i.category_id
+    WHERE i.created_at >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
+    GROUP BY c.id
+    ORDER BY total DESC
+")->fetchAll();
+
+// By severity (last 12 months)
+$bySev = $pdo->query("
+    SELECT severity, COUNT(*) AS total
+    FROM incidents
+    WHERE created_at >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
+    GROUP BY severity
+    ORDER BY FIELD(severity,'Critical','High','Medium','Low')
+")->fetchAll();
+
+// By status (last 12 months)
+$byStatus = $pdo->query("
+    SELECT status, COUNT(*) AS total
+    FROM incidents
+    WHERE created_at >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
+    GROUP BY status
+    ORDER BY FIELD(status,'New','Acknowledged','In Progress','Resolved','Closed')
+")->fetchAll();
+
+// Top affected systems (all time)
 $topSystems = $pdo->query("
     SELECT affected_system, COUNT(*) AS total
     FROM incidents
@@ -61,126 +99,441 @@ $responseTimes = $pdo->query("
     FROM incidents
     WHERE resolved_at IS NOT NULL
     GROUP BY severity
+    ORDER BY FIELD(severity,'Critical','High','Medium','Low')
 ")->fetchAll();
+
+// Open count
+$openCount = $pdo->query("SELECT COUNT(*) FROM incidents WHERE status NOT IN ('Resolved','Closed')")->fetchColumn();
+
+// Dynamic heights for chart wrappers
+$catChartH  = max(count($byCat)      * 46, 180);
+$statChartH = max(count($byStatus)   * 52, 180);
+$sysChartH  = max(count($topSystems) * 44, 180);
+
+// Single JSON blob — keeps all PHP echos out of the main <script> block
+$chartData = json_encode([
+    'monthLabels' => $monthLabels,
+    'critical'    => $series['Critical'],
+    'high'        => $series['High'],
+    'medium'      => $series['Medium'],
+    'low'         => $series['Low'],
+    'catLabels'   => array_column($byCat,      'name'),
+    'catData'     => array_map('intval', array_column($byCat,      'total')),
+    'sevLabels'   => array_column($bySev,      'severity'),
+    'sevData'     => array_map('intval', array_column($bySev,      'total')),
+    'statLabels'  => array_column($byStatus,   'status'),
+    'statData'    => array_map('intval', array_column($byStatus,   'total')),
+    'sysLabels'   => array_column($topSystems, 'affected_system'),
+    'sysData'     => array_map('intval', array_column($topSystems, 'total')),
+    'rtLabels'    => array_column($responseTimes, 'severity'),
+    'rtActual'    => array_map('floatval', array_column($responseTimes, 'avg_hours')),
+    'slaMap'      => SLA_HOURS,
+], JSON_HEX_TAG | JSON_HEX_AMP);
+$chartFlags = json_encode([
+    'monthly' => !empty($monthLabels),
+    'cat'     => !empty($byCat),
+    'sev'     => !empty($bySev),
+    'status'  => !empty($byStatus),
+    'systems' => !empty($topSystems),
+    'rt'      => !empty($responseTimes),
+]);
 
 $pageTitle = 'Trend Reports';
 include __DIR__ . '/../../includes/header.php';
 ?>
 
+<!-- Chart.js loaded here so it is available before DOMContentLoaded fires -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+
 <div class="page-header">
     <div>
         <h1 class="page-title"><i class="bi bi-graph-up-arrow me-2 text-cyan"></i>Trend Reports</h1>
-        <p class="page-subtitle">12-month incident trends, affected systems, and response time analysis.</p>
+        <p class="page-subtitle">12-month incident trends, category analysis, and response-time metrics</p>
     </div>
     <a href="<?= APP_URL ?>/public/analytics/export.php" class="btn btn-outline-secondary btn-sm">
         <i class="bi bi-download me-1"></i> Export CSV
     </a>
 </div>
 
-<!-- Stacked bar: monthly by severity -->
-<div class="cirms-card mb-3">
-    <div class="cirms-card-header">
-        <h2 class="cirms-card-title">Monthly Incidents by Severity (Last 12 Months)</h2>
+<!-- ── KPI Summary ────────────────────────────────────────── -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon cyan"><i class="bi bi-calendar3-range-fill"></i></div>
+            <div>
+                <div class="stat-value"><?= number_format($totalPeriod) ?></div>
+                <div class="stat-label">This Period</div>
+            </div>
+        </div>
     </div>
-    <canvas id="stackedChart" height="80"></canvas>
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon amber"><i class="bi bi-bar-chart-steps"></i></div>
+            <div>
+                <div class="stat-value"><?= $peakMonthCount ?></div>
+                <div class="stat-label">Peak Month</div>
+                <div style="font-size:.72rem;color:var(--muted);margin-top:.1rem;"><?= e($peakMonthLabel) ?></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon red"><i class="bi bi-exclamation-octagon-fill"></i></div>
+            <div>
+                <div class="stat-value"><?= number_format($openCount) ?></div>
+                <div class="stat-label">Still Open</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon green"><i class="bi bi-stopwatch-fill"></i></div>
+            <div>
+                <div class="stat-value"><?= count($responseTimes) ?></div>
+                <div class="stat-label">Severities w/ SLA</div>
+            </div>
+        </div>
+    </div>
 </div>
 
+<!-- ── 1. Monthly by Severity ─────────────────────────────── -->
+<div class="cirms-card mb-3">
+    <div class="cirms-card-header">
+        <h2 class="cirms-card-title"><i class="bi bi-bar-chart-fill me-2 text-cyan"></i>Monthly Incidents by Severity</h2>
+        <span style="font-size:.75rem;color:var(--muted);background:var(--bg);padding:.2rem .6rem;border-radius:4px;border:1px solid var(--border);">Last 12 months</span>
+    </div>
+    <?php if (empty($monthLabels)): ?>
+    <div class="text-center py-5 text-muted">
+        <i class="bi bi-inbox fs-1 d-block mb-2 opacity-50"></i>
+        No incident data in the last 12 months.
+    </div>
+    <?php else: ?>
+    <canvas id="stackedChart" height="80"></canvas>
+    <?php endif; ?>
+</div>
+
+<!-- ── 2. By Category + Severity Distribution ─────────────── -->
 <div class="row g-3 mb-3">
 
-    <!-- Top affected systems -->
-    <div class="col-lg-6">
+    <div class="col-md-6">
         <div class="cirms-card h-100">
             <div class="cirms-card-header">
-                <h2 class="cirms-card-title">Top Affected Systems</h2>
+                <h2 class="cirms-card-title"><i class="bi bi-tag-fill me-2 text-cyan"></i>Incidents by Category</h2>
             </div>
-            <?php if (empty($topSystems)): ?>
-            <p class="text-muted">No data yet.</p>
+            <?php if (empty($byCat)): ?>
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-inbox fs-1 d-block mb-2 opacity-50"></i>No data yet.
+            </div>
             <?php else: ?>
-            <?php
-            $maxCount = max(array_column($topSystems, 'total'));
-            foreach ($topSystems as $sys):
-                $pct = $maxCount > 0 ? round(($sys['total'] / $maxCount) * 100) : 0;
-            ?>
-            <div class="mb-3">
-                <div class="d-flex justify-content-between mb-1" style="font-size:.875rem;">
-                    <span><?= e($sys['affected_system']) ?></span>
-                    <strong><?= $sys['total'] ?></strong>
-                </div>
-                <div class="progress" style="height:8px;border-radius:4px;">
-                    <div class="progress-bar" style="width:<?= $pct ?>%;background:#0d1b2a;"></div>
-                </div>
+            <div style="position:relative;height:<?= $catChartH ?>px;">
+                <canvas id="catChart"></canvas>
             </div>
-            <?php endforeach; ?>
             <?php endif; ?>
         </div>
     </div>
 
-    <!-- Response time table -->
-    <div class="col-lg-6">
+    <div class="col-md-6">
         <div class="cirms-card h-100">
             <div class="cirms-card-header">
-                <h2 class="cirms-card-title">Average Resolution Time by Severity</h2>
+                <h2 class="cirms-card-title"><i class="bi bi-exclamation-triangle-fill me-2 text-cyan"></i>Severity Distribution</h2>
             </div>
-            <?php if (empty($responseTimes)): ?>
-            <p class="text-muted">No resolved incidents yet.</p>
+            <?php if (empty($bySev)): ?>
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-inbox fs-1 d-block mb-2 opacity-50"></i>No data yet.
+            </div>
             <?php else: ?>
+            <div style="max-width:310px;margin:0 auto;padding:.5rem 0;">
+                <canvas id="sevChart"></canvas>
+            </div>
+            <?php endif; ?>
+        </div>
+    </div>
+</div>
+
+<!-- ── 3. Status Breakdown + Top Affected Systems ─────────── -->
+<div class="row g-3 mb-3">
+
+    <div class="col-md-6">
+        <div class="cirms-card h-100">
+            <div class="cirms-card-header">
+                <h2 class="cirms-card-title"><i class="bi bi-layers-fill me-2 text-cyan"></i>Status Breakdown</h2>
+            </div>
+            <?php if (empty($byStatus)): ?>
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-inbox fs-1 d-block mb-2 opacity-50"></i>No data yet.
+            </div>
+            <?php else: ?>
+            <div style="position:relative;height:<?= $statChartH ?>px;">
+                <canvas id="statusChart"></canvas>
+            </div>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="cirms-card h-100">
+            <div class="cirms-card-header">
+                <h2 class="cirms-card-title"><i class="bi bi-pc-display me-2 text-cyan"></i>Top Affected Systems</h2>
+            </div>
+            <?php if (empty($topSystems)): ?>
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-inbox fs-1 d-block mb-2 opacity-50"></i>No data yet.
+            </div>
+            <?php else: ?>
+            <div style="position:relative;height:<?= $sysChartH ?>px;">
+                <canvas id="systemsChart"></canvas>
+            </div>
+            <?php endif; ?>
+        </div>
+    </div>
+</div>
+
+<!-- ── 4. Resolution Time vs SLA ──────────────────────────── -->
+<div class="cirms-card mb-3">
+    <div class="cirms-card-header">
+        <h2 class="cirms-card-title"><i class="bi bi-stopwatch-fill me-2 text-cyan"></i>Average Resolution Time vs SLA Target</h2>
+    </div>
+    <?php if (empty($responseTimes)): ?>
+    <div class="text-center py-5 text-muted">
+        <i class="bi bi-inbox fs-1 d-block mb-2 opacity-50"></i>No resolved incidents yet.
+    </div>
+    <?php else: ?>
+    <div class="row g-4 align-items-start">
+        <div class="col-lg-7">
+            <canvas id="resolutionChart" height="130"></canvas>
+        </div>
+        <div class="col-lg-5">
             <table class="cirms-table">
                 <thead>
                     <tr>
                         <th>Severity</th>
-                        <th>Avg. Hours to Resolve</th>
+                        <th>Avg Hours</th>
                         <th>SLA Target</th>
-                        <th>Resolved Count</th>
+                        <th>Status</th>
                     </tr>
                 </thead>
                 <tbody>
-                <?php foreach ($responseTimes as $rt): ?>
+                <?php foreach ($responseTimes as $rt):
+                    $target = SLA_HOURS[$rt['severity']] ?? 72;
+                    $avg    = (float)$rt['avg_hours'];
+                    $met    = $avg <= $target;
+                ?>
                 <tr>
                     <td><span class="badge <?= severity_class($rt['severity']) ?>"><?= e($rt['severity']) ?></span></td>
+                    <td><span class="<?= $met ? 'sla-ok' : 'sla-breach' ?>"><?= $avg ?>h</span></td>
+                    <td class="text-muted" style="font-size:.83rem;"><?= $target ?>h</td>
                     <td>
-                        <?php
-                        $target = SLA_HOURS[$rt['severity']] ?? 72;
-                        $avg    = (float)$rt['avg_hours'];
-                        $cls    = $avg <= $target ? 'sla-ok' : 'sla-breach';
-                        ?>
-                        <span class="<?= $cls ?>"><?= $avg ?>h</span>
+                        <?php if ($met): ?>
+                        <span class="badge" style="background:rgba(34,197,94,.1);color:#16a34a;border:1px solid rgba(34,197,94,.25);">
+                            <i class="bi bi-check-circle-fill me-1"></i>Met
+                        </span>
+                        <?php else: ?>
+                        <span class="badge" style="background:rgba(239,68,68,.1);color:#b91c1c;border:1px solid rgba(239,68,68,.25);">
+                            <i class="bi bi-x-circle-fill me-1"></i>Breached
+                        </span>
+                        <?php endif; ?>
                     </td>
-                    <td class="text-muted" style="font-size:.85rem;"><?= $target ?>h</td>
-                    <td><?= $rt['resolved_count'] ?></td>
                 </tr>
                 <?php endforeach; ?>
                 </tbody>
             </table>
-            <?php endif; ?>
         </div>
     </div>
+    <?php endif; ?>
 </div>
 
+<!-- Step 1: PHP data → JS variables (only PHP echos in this block) -->
 <script>
-Chart.defaults.font.family = "'DM Sans', sans-serif";
-Chart.defaults.color = '#64748b';
+var TR = <?= $chartData ?>;
+var TR_SHOW = <?= $chartFlags ?>;
+</script>
 
-const labels = <?= json_encode($monthLabels) ?>;
+<!-- Step 2: Pure JavaScript — zero PHP inside this block -->
+<script>
+document.addEventListener('DOMContentLoaded', function () {
 
-new Chart(document.getElementById('stackedChart'), {
-    type: 'bar',
-    data: {
-        labels: labels,
-        datasets: [
-            { label: 'Critical', data: <?= json_encode($series['Critical']) ?>, backgroundColor: '#ef4444', borderRadius: 3 },
-            { label: 'High',     data: <?= json_encode($series['High']) ?>,     backgroundColor: '#f97316', borderRadius: 3 },
-            { label: 'Medium',   data: <?= json_encode($series['Medium']) ?>,   backgroundColor: '#f59e0b', borderRadius: 3 },
-            { label: 'Low',      data: <?= json_encode($series['Low']) ?>,       backgroundColor: '#22c55e', borderRadius: 3 },
-        ]
-    },
-    options: {
-        plugins: { legend: { position: 'top' } },
-        scales: {
-            x: { stacked: true },
-            y: { stacked: true, beginAtZero: true, ticks: { stepSize: 1 } }
+    Chart.defaults.font.family = "'DM Sans', sans-serif";
+    Chart.defaults.color = '#64748b';
+
+    /* Center-total plugin for doughnut charts */
+    Chart.register({
+        id: 'centerText',
+        afterDraw: function (chart) {
+            if (chart.config.type !== 'doughnut') return;
+            var ca = chart.chartArea;
+            if (!ca) return;
+            var total = chart.data.datasets[0].data.reduce(function (a, b) { return a + b; }, 0);
+            var cx = (ca.left + ca.right) / 2;
+            var cy = (ca.top  + ca.bottom) / 2;
+            var c  = chart.ctx;
+            c.save();
+            c.textAlign = 'center'; c.textBaseline = 'middle';
+            c.fillStyle = '#0d1b2a';
+            c.font = 'bold 22px "Space Mono", monospace';
+            c.fillText(total, cx, cy - 9);
+            c.font = '11px "DM Sans", sans-serif'; c.fillStyle = '#8899aa';
+            c.fillText('total', cx, cy + 12);
+            c.restore();
         }
+    });
+
+    var SEV_COLORS = { Low:'#22c55e', Medium:'#f59e0b', High:'#f97316', Critical:'#ef4444' };
+    var STATUS_COLORS = {
+        New:'#6366f1', Acknowledged:'#0ea5e9',
+        'In Progress':'#f59e0b', Resolved:'#22c55e', Closed:'#94a3b8'
+    };
+    var CAT_PALETTE = ['#0d1b2a','#00aacc','#6366f1','#f59e0b','#f97316','#ef4444','#22c55e','#a78bfa'];
+
+    function pctLabel(ctx) {
+        var vals = ctx.dataset.data;
+        var total = vals.reduce(function (a, b) { return a + b; }, 0);
+        var val = (ctx.chart.config.type === 'doughnut')
+            ? ctx.parsed
+            : (ctx.parsed.x !== undefined ? ctx.parsed.x : ctx.parsed.y);
+        var pct = total > 0 ? ((val / total) * 100).toFixed(1) : '0.0';
+        return ' ' + val + ' (' + pct + '%)';
     }
-});
+
+    function hBarOpts() {
+        return {
+            indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false }, tooltip: { callbacks: { label: pctLabel } } },
+            scales: {
+                x: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: 'rgba(0,0,0,.05)' } },
+                y: { grid: { display: false } }
+            }
+        };
+    }
+
+    /* 1. Monthly stacked bar */
+    if (TR_SHOW.monthly) {
+        new Chart(document.getElementById('stackedChart'), {
+            type: 'bar',
+            data: {
+                labels: TR.monthLabels,
+                datasets: [
+                    { label: 'Critical', data: TR.critical, backgroundColor: '#ef4444', borderRadius: 3 },
+                    { label: 'High',     data: TR.high,     backgroundColor: '#f97316', borderRadius: 3 },
+                    { label: 'Medium',   data: TR.medium,   backgroundColor: '#f59e0b', borderRadius: 3 },
+                    { label: 'Low',      data: TR.low,      backgroundColor: '#22c55e', borderRadius: 3 }
+                ]
+            },
+            options: {
+                plugins: {
+                    legend: { position: 'top' },
+                    tooltip: {
+                        mode: 'index', intersect: false,
+                        callbacks: {
+                            footer: function (items) {
+                                return 'Total: ' + items.reduce(function (s, i) { return s + i.parsed.y; }, 0);
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: { stacked: true, grid: { display: false } },
+                    y: { stacked: true, beginAtZero: true, ticks: { stepSize: 1 } }
+                }
+            }
+        });
+    }
+
+    /* 2. Incidents by category (horizontal bar) */
+    if (TR_SHOW.cat) {
+        new Chart(document.getElementById('catChart'), {
+            type: 'bar',
+            data: {
+                labels: TR.catLabels,
+                datasets: [{ data: TR.catData, backgroundColor: CAT_PALETTE.slice(0, TR.catData.length), borderRadius: 4, borderSkipped: false }]
+            },
+            options: hBarOpts()
+        });
+    }
+
+    /* 3. Severity distribution donut */
+    if (TR_SHOW.sev) {
+        new Chart(document.getElementById('sevChart'), {
+            type: 'doughnut',
+            data: {
+                labels: TR.sevLabels,
+                datasets: [{
+                    data: TR.sevData,
+                    backgroundColor: TR.sevLabels.map(function (s) { return SEV_COLORS[s] || '#94a3b8'; }),
+                    borderWidth: 3, borderColor: '#fff', hoverOffset: 8
+                }]
+            },
+            options: {
+                cutout: '65%',
+                plugins: {
+                    legend: { position: 'bottom', labels: { boxWidth: 12, padding: 14, font: { size: 12 } } },
+                    tooltip: { callbacks: { label: pctLabel } }
+                }
+            }
+        });
+    }
+
+    /* 4. Status breakdown (horizontal bar) */
+    if (TR_SHOW.status) {
+        new Chart(document.getElementById('statusChart'), {
+            type: 'bar',
+            data: {
+                labels: TR.statLabels,
+                datasets: [{ data: TR.statData, backgroundColor: TR.statLabels.map(function (s) { return STATUS_COLORS[s] || '#94a3b8'; }), borderRadius: 4, borderSkipped: false }]
+            },
+            options: hBarOpts()
+        });
+    }
+
+    /* 5. Top affected systems (horizontal bar) */
+    if (TR_SHOW.systems) {
+        new Chart(document.getElementById('systemsChart'), {
+            type: 'bar',
+            data: {
+                labels: TR.sysLabels,
+                datasets: [{ data: TR.sysData, backgroundColor: 'rgba(0,170,204,.7)', borderColor: '#00aacc', borderWidth: 1, borderRadius: 4, borderSkipped: false }]
+            },
+            options: hBarOpts()
+        });
+    }
+
+    /* 6. Resolution time vs SLA (grouped bar) */
+    if (TR_SHOW.rt) {
+        var rtTargets = TR.rtLabels.map(function (s) { return TR.slaMap[s] || 72; });
+        new Chart(document.getElementById('resolutionChart'), {
+            type: 'bar',
+            data: {
+                labels: TR.rtLabels,
+                datasets: [
+                    {
+                        label: 'Avg Actual (hrs)',
+                        data: TR.rtActual,
+                        backgroundColor: TR.rtLabels.map(function (s) { return SEV_COLORS[s] || '#94a3b8'; }),
+                        borderRadius: 4
+                    },
+                    {
+                        label: 'SLA Target (hrs)',
+                        data: rtTargets,
+                        backgroundColor: 'rgba(148,163,184,.25)',
+                        borderColor: '#94a3b8',
+                        borderWidth: 1.5,
+                        borderRadius: 4
+                    }
+                ]
+            },
+            options: {
+                plugins: {
+                    legend: { position: 'top' },
+                    tooltip: { callbacks: { label: function (ctx) { return ' ' + ctx.parsed.y + 'h — ' + ctx.dataset.label; } } }
+                },
+                scales: {
+                    y: { beginAtZero: true, title: { display: true, text: 'Hours' }, ticks: { stepSize: 1 } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    }
+
+}); /* end DOMContentLoaded */
 </script>
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>
