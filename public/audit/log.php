@@ -52,8 +52,8 @@ $total = (int)$countStmt->fetchColumn();
 $pages = (int)ceil($total / $perPg);
 
 $logsStmt = $pdo->prepare("
-    SELECT al.id, al.action, al.target_type, al.target_id, al.details, al.created_at,
-           u.full_name
+    SELECT al.id, al.action, al.target_type, al.target_id, al.details,
+           al.ip_address, al.created_at, u.full_name
     FROM audit_log al
     LEFT JOIN users u ON u.id = al.user_id
     $whereSQL
@@ -147,6 +147,7 @@ include __DIR__ . '/../../includes/header.php';
                     <th>User</th>
                     <th>Action</th>
                     <th>Target</th>
+                    <th>IP Address</th>
                     <th style="width:1%;text-align:center;">Details</th>
                 </tr>
             </thead>
@@ -194,6 +195,17 @@ include __DIR__ . '/../../includes/header.php';
                     <?php endif; ?>
                     <?php else: ?>
                     <span class="text-muted" style="font-size:.8rem;">—</span>
+                    <?php endif; ?>
+                </td>
+
+                <!-- IP Address -->
+                <td>
+                    <?php if (!empty($log['ip_address'])): ?>
+                    <span style="font-size:.75rem;font-family:'Space Mono',monospace;color:var(--muted);">
+                        <?= e($log['ip_address']) ?>
+                    </span>
+                    <?php else: ?>
+                    <span class="text-muted" style="font-size:.75rem;">—</span>
                     <?php endif; ?>
                 </td>
 

@@ -115,7 +115,8 @@ define('SLA_HOURS', [
 ]);
 
 // ----- Environment -----
-define('APP_ENV', 'development'); // Change to 'production' on live server
+// Override to 'production' via config.local.php: return ['app_env' => 'production'];
+define('APP_ENV', $__local['app_env'] ?? 'development');
 
 if (APP_ENV === 'development') {
     ini_set('display_errors', 1);

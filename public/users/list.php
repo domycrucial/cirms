@@ -3,7 +3,7 @@
 // CIRMS – User Account Management
 // public/users/list.php
 //
-// EMAILS SENT FROM THIS FILE (3 types):
+// EMAILS SENT FROM THIS FILE (4 types):
 //
 //   EMAIL 1 → New User (on account creation)
 //             Function: notify_account_created()
@@ -21,6 +21,11 @@
 //             Function: notify_role_changed()
 //             Trigger:  Admin changes role via the dropdown
 //             Content:  Old role, new role, description of new permissions
+//
+//   EMAIL 4 → User (on lockout cleared)
+//             Function: notify_lockout_cleared()
+//             Trigger:  Admin clicks Unlock on a locked account
+//             Content:  Lockout lifted, sign-in link, security notice
 //
 // All email functions live in modules/notifications/mailer.php.
 // ============================================================
@@ -187,12 +192,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    // ══════════════════════════════════════════════════════════
+    //  ACTION 4: Unlock a locked-out user account
+    //
+    //  Inserts an 'auth.lockout_cleared' event into audit_log.
+    //  login.php only counts failures that happened AFTER the
+    //  latest lockout_cleared event, so this takes effect
+    //  instantly — no waiting for the 30-minute window.
+    // ══════════════════════════════════════════════════════════
+    if ($action === 'unlock_user' && $uid) {
+
+        $stmt = $pdo->prepare("SELECT full_name, email FROM users WHERE id = ?");
+        $stmt->execute([$uid]);
+        $targetUser = $stmt->fetch();
+
+        if ($targetUser) {
+            // Write the clear marker into audit_log so login.php skips
+            // any failures that predate this timestamp.
+            audit_log('auth.lockout_cleared', 'user', $uid, [
+                'email'      => $targetUser['email'],
+                'cleared_by' => 'admin',
+            ]);
+
+            notify_lockout_cleared($targetUser['email'], $targetUser['full_name']);
+
+            flash('success',
+                "Lockout cleared for {$targetUser['full_name']}. " .
+                "They have been notified by email and may now sign in."
+            );
+        }
+    }
+
     redirect('/public/users/list.php');
 }
 
-// ── Fetch users with search and role filter ──────────────────
-$search = trim($_GET['q']    ?? '');
-$filter = $_GET['role']      ?? '';
+// ── Fetch users with search, role, and locked filter ─────────
+$search      = trim($_GET['q']      ?? '');
+$filter      = $_GET['role']        ?? '';
+$filterLocked= isset($_GET['locked']) && $lockedEmails; // show locked-only
 
 $where  = ['1=1'];
 $params = [];
@@ -208,6 +245,13 @@ if ($filter) {
     $params[] = $filter;
 }
 
+if ($filterLocked) {
+    // Build an IN list of locked email addresses
+    $lockedPlaceholders = implode(',', array_fill(0, count($lockedEmails), '?'));
+    $where[]  = "email IN ({$lockedPlaceholders})";
+    $params   = array_merge($params, array_keys($lockedEmails));
+}
+
 $stmt = $pdo->prepare("
     SELECT u.*,
            (SELECT COUNT(*) FROM incidents WHERE reporter_id = u.id) AS incident_count
@@ -218,6 +262,48 @@ $stmt = $pdo->prepare("
 $stmt->execute($params);
 $users = $stmt->fetchAll();
 
+// ── Detect currently locked accounts ────────────────────────
+// An account is "locked" when it has ≥3 auth.login_failed events
+// in the last 30 minutes that all occurred AFTER the most recent
+// auth.lockout_cleared event (or no clear event exists).
+//
+// Step 1 — pull all emails with ≥3 recent failures.
+$rawFails = $pdo->query("
+    SELECT JSON_UNQUOTE(JSON_EXTRACT(details, '$.email')) AS email,
+           COUNT(*)        AS fail_count,
+           MAX(created_at) AS last_fail
+    FROM   audit_log
+    WHERE  action     = 'auth.login_failed'
+      AND  created_at >= DATE_SUB(NOW(), INTERVAL 30 MINUTE)
+    GROUP  BY email
+    HAVING fail_count >= 3
+")->fetchAll(PDO::FETCH_ASSOC);
+
+// Step 2 — for each, verify no admin-clear event came AFTER the failures.
+// (If cleared_at > last_fail the admin already unlocked this session.)
+$lockedEmails = [];
+foreach ($rawFails as $row) {
+    $em = strtolower(trim($row['email'] ?? ''));
+    if (!$em) continue;
+
+    $clrStmt = $pdo->prepare("
+        SELECT MAX(created_at) FROM audit_log
+        WHERE  action = 'auth.lockout_cleared'
+          AND  details LIKE ?
+    ");
+    $clrStmt->execute(['%' . json_encode($em) . '%']);
+    $lastClear = $clrStmt->fetchColumn();
+
+    // Still locked when: never cleared, OR the clear happened before the failures
+    if (!$lastClear || $lastClear < $row['last_fail']) {
+        $lockedEmails[$em] = [
+            'fail_count' => (int) $row['fail_count'],
+            'last_fail'  => $row['last_fail'],
+            'expires_at' => date('H:i', strtotime($row['last_fail'] . ' +30 minutes')),
+        ];
+    }
+}
+
 $pageTitle = 'Manage Users';
 include __DIR__ . '/../../includes/header.php';
 ?>
@@ -227,7 +313,16 @@ include __DIR__ . '/../../includes/header.php';
         <h1 class="page-title">
             <i class="bi bi-people-fill me-2 text-cyan"></i>Manage Users
         </h1>
-        <p class="page-subtitle"><?= count($users) ?> account<?= count($users) !== 1 ? 's' : '' ?></p>
+        <p class="page-subtitle">
+            <?= count($users) ?> account<?= count($users) !== 1 ? 's' : '' ?>
+            <?php if ($lockedEmails): ?>
+                &nbsp;·&nbsp;
+                <span style="color:#ef4444;font-weight:600;">
+                    <i class="bi bi-lock-fill"></i>
+                    <?= count($lockedEmails) ?> locked
+                </span>
+            <?php endif; ?>
+        </p>
     </div>
     <!-- Opens the create-user modal -->
     <button class="btn btn-dark btn-cirms btn-primary-cirms"
@@ -240,6 +335,27 @@ include __DIR__ . '/../../includes/header.php';
 <?php $flash = get_flash(); if ($flash): ?>
 <div class="alert alert-<?= $flash['type'] === 'success' ? 'success' : 'danger' ?> mb-3">
     <?= e($flash['message']) ?>
+</div>
+<?php endif; ?>
+
+<!-- Locked accounts alert banner -->
+<?php if ($lockedEmails): ?>
+<div class="alert mb-3" style="background:#fff5f5;border:1.5px solid #fca5a5;color:#7f1d1d;border-radius:10px;">
+    <div class="d-flex align-items-start gap-2">
+        <i class="bi bi-shield-exclamation fs-5 mt-1" style="color:#ef4444;flex-shrink:0;"></i>
+        <div>
+            <strong><?= count($lockedEmails) ?> account<?= count($lockedEmails) !== 1 ? 's are' : ' is' ?> currently locked</strong>
+            due to repeated failed sign-in attempts. Review and unlock below if the attempts were legitimate.
+            <div class="mt-2 d-flex flex-wrap gap-2">
+                <?php foreach ($lockedEmails as $em => $info): ?>
+                <span style="background:#fee2e2;border-radius:6px;padding:.2rem .6rem;font-size:.8rem;font-weight:600;">
+                    <i class="bi bi-lock-fill me-1"></i><?= e($em) ?>
+                    &nbsp;<span style="font-weight:400;opacity:.75;">(<?= $info['fail_count'] ?> attempts · auto-expires <?= e($info['expires_at']) ?>)</span>
+                </span>
+                <?php endforeach; ?>
+            </div>
+        </div>
+    </div>
 </div>
 <?php endif; ?>
 
@@ -259,6 +375,15 @@ include __DIR__ . '/../../includes/header.php';
                 <option value="admin"    <?= $filter === 'admin'    ? 'selected' : '' ?>>Admin</option>
             </select>
         </div>
+        <?php if ($lockedEmails): ?>
+        <div class="col-md-2">
+            <a href="?locked=1" class="btn btn-outline-warning w-100"
+               style="font-size:.82rem;"
+               title="Show only locked accounts">
+                <i class="bi bi-lock-fill me-1"></i>Locked (<?= count($lockedEmails) ?>)
+            </a>
+        </div>
+        <?php endif; ?>
         <div class="col-md-2">
             <button class="btn btn-dark w-100">
                 <i class="bi bi-search me-1"></i> Filter
@@ -301,10 +426,23 @@ include __DIR__ . '/../../includes/header.php';
                 <td style="font-size:.85rem;"><?= e($u['department'] ?: '—') ?></td>
                 <td style="font-size:.85rem;text-align:center;"><?= $u['incident_count'] ?></td>
                 <td>
+                    <?php
+                        $isLocked = isset($lockedEmails[strtolower($u['email'])]);
+                        $lockInfo = $isLocked ? $lockedEmails[strtolower($u['email'])] : null;
+                    ?>
                     <?php if ($u['is_active']): ?>
                         <span style="color:#16a34a;font-size:.8rem;font-weight:600;">● Active</span>
                     <?php else: ?>
                         <span style="color:#94a3b8;font-size:.8rem;font-weight:600;">● Inactive</span>
+                    <?php endif; ?>
+                    <?php if ($isLocked): ?>
+                    <br>
+                    <span title="<?= $lockInfo['fail_count'] ?> failed attempts · auto-expires <?= e($lockInfo['expires_at']) ?>"
+                          style="display:inline-flex;align-items:center;gap:.25rem;margin-top:.2rem;
+                                 background:#fee2e2;color:#b91c1c;border-radius:5px;
+                                 padding:.1rem .45rem;font-size:.73rem;font-weight:700;cursor:default;">
+                        <i class="bi bi-lock-fill"></i> Locked
+                    </span>
                     <?php endif; ?>
                 </td>
                 <td class="text-muted" style="font-size:.8rem;">
@@ -341,6 +479,22 @@ include __DIR__ . '/../../includes/header.php';
                                 <?= $u['is_active'] ? 'Deactivate' : 'Activate' ?>
                             </button>
                         </form>
+
+                        <?php if ($isLocked): ?>
+                        <!-- Unlock button — clears failed-login lockout immediately -->
+                        <form method="POST" class="d-inline">
+                            <?= csrf_field() ?>
+                            <input type="hidden" name="action"  value="unlock_user">
+                            <input type="hidden" name="user_id" value="<?= $u['id'] ?>">
+                            <button type="submit"
+                                    class="btn btn-sm btn-warning"
+                                    style="font-size:.73rem;"
+                                    title="Clear login lockout — <?= $lockInfo['fail_count'] ?> failed attempts. User will be notified by email."
+                                    data-confirm="Clear the login lockout for <?= e($u['full_name']) ?>? They will be emailed to confirm access is restored.">
+                                <i class="bi bi-unlock-fill me-1"></i>Unlock
+                            </button>
+                        </form>
+                        <?php endif; ?>
 
                     </div>
                     <?php else: ?>

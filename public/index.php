@@ -5,6 +5,7 @@
 // ============================================================
 
 require_once __DIR__ . '/../includes/functions.php';
+send_security_headers();
 session_start_secure();
 
 if (is_logged_in()) {
@@ -179,7 +180,7 @@ if (is_logged_in()) {
             <div class="contact-card reveal delay-2">
                 <i class="bi bi-telephone-fill"></i>
                 <h4>Call Center</h4>
-                <p>+255 800 123 456</p>
+                <p>+255 615 359 265</p>
                 <a href="tel:+255800123456" class="contact-link">Call now <i class="bi bi-arrow-right"></i></a>
             </div>
             <div class="contact-card reveal delay-3">
@@ -229,40 +230,124 @@ if (is_logged_in()) {
         </div>
     </footer>
 
+    <!-- Page-transition loading overlay (no Bootstrap needed — custom CSS spinner) -->
+    <div id="pageLoader" role="status" aria-label="Loading"
+         style="display:none;position:fixed;inset:0;background:rgba(10,20,35,.92);z-index:9999;
+                align-items:center;justify-content:center;flex-direction:column;gap:1.4rem;">
+        <!-- Outer glow ring + inner spinner -->
+        <div class="cirms-loader-wrap">
+            <div class="cirms-glow-ring"></div>
+            <div class="cirms-spin-ring"></div>
+            <div class="cirms-logo-center">
+                <img src="<?= APP_URL ?>/public/assets/images/cirms_logo.png"
+                     alt="" style="width:28px;height:28px;border-radius:7px;object-fit:cover;">
+            </div>
+        </div>
+        <span id="pageLoaderLabel"
+              style="color:#cbd5e1;font-size:1rem;font-weight:500;letter-spacing:.06em;">Loading…</span>
+        <!-- Animated dot-progress bar -->
+        <div class="cirms-progress-bar"><div class="cirms-progress-fill"></div></div>
+    </div>
+    <style>
+        .cirms-loader-wrap {
+            position: relative;
+            width: 80px; height: 80px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .cirms-glow-ring {
+            position: absolute; inset: 0;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(0,212,255,.12) 0%, transparent 70%);
+            animation: cirmsGlowPulse 2s ease-in-out infinite;
+        }
+        .cirms-spin-ring {
+            position: absolute; inset: 6px;
+            border: 4px solid rgba(0,212,255,.18);
+            border-top-color: #00d4ff;
+            border-radius: 50%;
+            animation: landingSpin .85s linear infinite;
+        }
+        .cirms-logo-center {
+            position: relative; z-index: 1;
+            animation: cirmsLogoPulse 2s ease-in-out infinite;
+        }
+        .cirms-progress-bar {
+            width: 180px; height: 3px;
+            background: rgba(0,212,255,.15);
+            border-radius: 99px;
+            overflow: hidden;
+        }
+        .cirms-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, transparent, #00d4ff, transparent);
+            border-radius: 99px;
+            animation: cirmsProgressSlide 1.4s ease-in-out infinite;
+        }
+        @keyframes landingSpin        { to { transform: rotate(360deg); } }
+        @keyframes cirmsGlowPulse     { 0%,100%{opacity:.6;transform:scale(1)} 50%{opacity:1;transform:scale(1.15)} }
+        @keyframes cirmsLogoPulse     { 0%,100%{opacity:.85} 50%{opacity:1} }
+        @keyframes cirmsProgressSlide { 0%{transform:translateX(-100%)} 100%{transform:translateX(200%)} }
+    </style>
+
     <!-- Interactivity JS -->
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // Navbar Scroll Effect
-            const navbar = document.querySelector('.landing-navbar');
-            window.addEventListener('scroll', () => {
-                if (window.scrollY > 50) {
-                    navbar.classList.add('scrolled');
-                } else {
-                    navbar.classList.remove('scrolled');
-                }
-            });
+    (function () {
+        'use strict';
 
-            // Scroll Reveal Animation via IntersectionObserver
-            const reveals = document.querySelectorAll('.reveal');
-            
-            const revealOptions = {
-                threshold: 0.1,
-                rootMargin: "0px 0px -50px 0px"
-            };
+        /* ── Page-transition overlay with 5-second delay ────────── */
+        var LOAD_DELAY = 5000; // ms — minimum time loader stays visible
 
-            const revealOnScroll = new IntersectionObserver(function(entries, observer) {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        entry.target.classList.add('active');
-                        observer.unobserve(entry.target); // Optional: stop observing once revealed
-                    }
-                });
-            }, revealOptions);
+        function navigateWithLoader(href, label) {
+            var el = document.getElementById('pageLoader');
+            var lb = document.getElementById('pageLoaderLabel');
+            if (!el) { window.location.href = href; return; }
+            if (lb && label) lb.textContent = label;
+            el.style.display = 'flex';
+            setTimeout(function () { window.location.href = href; }, LOAD_DELAY);
+        }
 
-            reveals.forEach(reveal => {
-                revealOnScroll.observe(reveal);
+        /* Attach intercepted navigation to external links */
+        document.querySelectorAll('a[href]').forEach(function (link) {
+            var href = link.getAttribute('href') || '';
+            if (!href || href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:')) return;
+            var text = link.textContent.trim();
+            var label = text === 'Sign In' || text === 'Sign in'     ? 'Opening sign in…'
+                      : text === 'Get Started' || text === 'Get started' ? 'Getting started…'
+                      : text.length ? text + '…' : 'Loading…';
+            link.addEventListener('click', function (e) {
+                if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+                e.preventDefault();
+                navigateWithLoader(href, label);
             });
         });
+
+        document.addEventListener('DOMContentLoaded', function () {
+
+            /* ── Navbar scroll effect ─────────────────────────── */
+            var navbar = document.querySelector('.landing-navbar');
+            if (navbar) {
+                window.addEventListener('scroll', function () {
+                    navbar.classList.toggle('scrolled', window.scrollY > 50);
+                });
+            }
+
+            /* ── Scroll-reveal via IntersectionObserver ──────── */
+            var reveals = document.querySelectorAll('.reveal');
+            if ('IntersectionObserver' in window) {
+                var observer = new IntersectionObserver(function (entries, obs) {
+                    entries.forEach(function (entry) {
+                        if (entry.isIntersecting) {
+                            entry.target.classList.add('active');
+                            obs.unobserve(entry.target);
+                        }
+                    });
+                }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+                reveals.forEach(function (el) { observer.observe(el); });
+            } else {
+                reveals.forEach(function (el) { el.classList.add('active'); });
+            }
+        });
+    }());
     </script>
 </body>
 </html>

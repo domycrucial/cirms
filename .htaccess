@@ -61,7 +61,7 @@ RewriteRule (^|/)\.(?!well-known) - [F,L]
     # File uploads
     php_value upload_max_filesize 5M
     php_value post_max_size 12M
-    php_value max_execution_time 30
+    php_value max_execution_time 90
 </IfModule>
 
 # ── Force HTTPS (uncomment in production) ────────────────────

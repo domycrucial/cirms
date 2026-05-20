@@ -50,203 +50,25 @@ body {
   flex-direction: column;
 }
 
-/* ── App Shell + Sidebar ─────────────────────────────────── */
-.cirms-shell {
-  display: flex;
-  min-height: 100vh;
-  width: 100%;
-  position: relative;
-}
+/* ── App shell + sidebar layout ─────────────────────────────
+   Full sidebar CSS (classes: .cirms-sidebar, .sb-*, etc.)
+   lives in includes/header.php <style> block so it loads
+   immediately with the HTML and avoids any FOUC.
+   Only shared utility classes that other pages use go here.
+   ─────────────────────────────────────────────────────────── */
 
-.cirms-sidebar {
-  width: 270px;
-  background: var(--navy);
-  border-right: 1px solid var(--navy-soft);
-  box-shadow: 3px 0 18px rgba(0,0,0,.18);
-  padding: 1rem .9rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  transition: width .2s ease, transform .25s ease, padding .2s ease;
-  z-index: 1040;
-  overflow-x: hidden;
-}
-
-.cirms-brand {
-  display: flex;
-  align-items: center;
-  gap: .55rem;
-  text-decoration: none;
-  color: var(--white) !important;
-  font-family: 'Space Mono', monospace;
-  font-weight: 700;
-  font-size: 1.25rem;
-  letter-spacing: .06em;
-}
-
-.brand-icon {
-  width: 36px; height: 36px;
-  background: linear-gradient(135deg, var(--cyan) 0%, var(--cyan-dim) 100%);
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.1rem;
-  color: var(--navy);
-}
-
-.cirms-content-wrap {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  transition: margin-left .2s ease;
-}
-
-.sidebar-toggle {
-  border: 1px solid rgba(255,255,255,.18);
-  background: rgba(255,255,255,.06);
-  color: #dbe7f0;
-  border-radius: 8px;
-  width: 36px;
-  height: 36px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
-
-.sidebar-toggle:hover {
-  color: var(--cyan);
-  border-color: rgba(0,212,255,.35);
-}
-
-.sidebar-toggle-desktop {
-  align-self: flex-end;
-}
-
-.content-topbar {
-  display: none;
-  align-items: center;
-  gap: .7rem;
-  padding: .75rem 1rem;
-  background: var(--navy);
-  color: #dbe7f0;
-  border-bottom: 1px solid var(--navy-soft);
-}
-
-.content-topbar-title {
-  font-size: .9rem;
-  font-weight: 600;
-}
-
-.sidebar-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(2, 6, 23, .4);
-  border: 0;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity .2s ease;
-  z-index: 1035;
-}
-
-/* ── User Badge ──────────────────────────────────────────── */
-.user-badge {
-  display: flex;
-  align-items: center;
-  gap: .5rem;
-  color: #dbe7f0;
-  font-size: .875rem;
-}
-
-.sidebar-user {
-  background: rgba(255,255,255,.05);
-  border: 1px solid rgba(255,255,255,.08);
-  border-radius: 10px;
-  padding: .7rem .75rem;
-}
-
-.sidebar-nav {
-  display: flex;
-  flex-direction: column;
-  gap: .35rem;
-}
-
-.sidebar-link {
-  color: #c0ced9;
-  font-size: .88rem;
-  font-weight: 500;
-  text-decoration: none;
-  padding: .52rem .68rem;
-  border-radius: 7px;
-  display: flex;
-  align-items: center;
-  gap: .55rem;
-  transition: background .15s, color .15s;
-}
-
-.sidebar-link i {
-  min-width: 1.1rem;
-}
-
-.sidebar-link:hover,
-.sidebar-link.active {
-  color: var(--cyan);
-  background: rgba(0,212,255,.09);
-}
-
-.sidebar-section-title {
-  font-size: .72rem;
-  font-weight: 700;
-  letter-spacing: .08em;
-  color: #94a3b8;
-  text-transform: uppercase;
-  margin-top: .8rem;
-  margin-bottom: .2rem;
-}
-
-.sidebar-logout {
-  margin-top: auto;
-}
-
-/* Desktop minimized state */
-.cirms-shell.sidebar-collapsed .cirms-sidebar {
-  width: 86px;
-  padding-left: .55rem;
-  padding-right: .55rem;
-}
-
-.cirms-shell.sidebar-collapsed .brand-text,
-.cirms-shell.sidebar-collapsed .sidebar-user,
-.cirms-shell.sidebar-collapsed .sidebar-section-title,
-.cirms-shell.sidebar-collapsed .sidebar-link span,
-.cirms-shell.sidebar-collapsed .sidebar-logout span {
-  display: none;
-}
-
-.cirms-shell.sidebar-collapsed .sidebar-link {
-  justify-content: center;
-}
-
-.cirms-shell.sidebar-collapsed .sidebar-link i,
-.cirms-shell.sidebar-collapsed .sidebar-logout i {
-  margin-right: 0 !important;
-}
-
+/* Role chips — used in sidebar footer AND users/list table */
 .role-chip {
-  font-size: .7rem;
+  display: inline-block;
+  font-size: .65rem;
   font-weight: 700;
   font-family: 'Space Mono', monospace;
-  letter-spacing: .05em;
-  padding: .15rem .45rem;
+  letter-spacing: .06em;
+  padding: .12rem .45rem;
   border-radius: 4px;
   text-transform: uppercase;
+  white-space: nowrap;
 }
-
 .role-admin    { background: rgba(239,68,68,.2);  color: #fca5a5; }
 .role-officer  { background: rgba(0,212,255,.15); color: var(--cyan); }
 .role-reporter { background: rgba(99,102,241,.2); color: #a5b4fc; }
@@ -254,7 +76,8 @@ body {
 /* ── Main Content ────────────────────────────────────────── */
 .cirms-main {
   flex: 1 0 auto;
-  padding: 1.75rem 1.5rem 2rem;
+  padding: 1.75rem 1.75rem 2.5rem;
+  background: var(--bg);
 }
 
 /* ── Page Header ─────────────────────────────────────────── */
@@ -262,49 +85,66 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.75rem;
   padding-bottom: 1rem;
   border-bottom: 2px solid var(--border);
+  gap: 1rem;
 }
 
 .page-title {
   font-family: 'Space Mono', monospace;
-  font-size: 1.45rem;
+  font-size: 1.4rem;
   font-weight: 700;
   color: var(--navy);
+  line-height: 1.2;
 }
 
 .page-subtitle {
   font-size: .875rem;
   color: var(--muted);
-  margin-top: .15rem;
+  margin-top: .2rem;
+  line-height: 1.4;
 }
 
 /* ── Cards ───────────────────────────────────────────────── */
 .cirms-card {
   background: var(--card-bg);
-  border-radius: var(--radius);
+  border-radius: 12px;
   border: 1px solid var(--border);
-  box-shadow: var(--shadow);
+  box-shadow: 0 1px 8px rgba(0,0,0,.06);
   padding: 1.5rem;
   margin-bottom: 1.25rem;
+  transition: box-shadow .2s;
 }
+.cirms-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,.09); }
 
 .cirms-card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-bottom: 1rem;
+  padding-bottom: .9rem;
   margin-bottom: 1rem;
   border-bottom: 1px solid var(--border);
+  gap: .75rem;
 }
 
 .cirms-card-title {
   font-family: 'Space Mono', monospace;
-  font-size: 1rem;
+  font-size: .95rem;
   font-weight: 700;
   color: var(--navy);
+  line-height: 1.3;
 }
+
+/* ── Empty State ─────────────────────────────────────────── */
+.empty-state {
+  text-align: center;
+  padding: 3.5rem 1rem;
+  color: #94a3b8;
+}
+.empty-state > i    { font-size: 3rem; display:block; margin-bottom:.75rem; opacity:.35; }
+.empty-state h5     { color:#64748b; font-size:1rem; margin-bottom:.4rem; font-weight:600; }
+.empty-state p      { font-size:.875rem; margin-bottom:1rem; }
 
 /* ── Stat Cards (Dashboard) ──────────────────────────────── */
 .stat-card {
@@ -474,85 +314,126 @@ body {
 .sla-warning { color: var(--medium);   font-weight: 600; }
 .sla-breach  { color: var(--critical); font-weight: 600; }
 
-/* ── Login / Auth Pages ──────────────────────────────────── */
-/* Full-viewport panel behind the white card (login, register, etc.) */
+/* ── Auth Pages (login / register / forgot password) ─────── */
+
+/* Wrapper — transparent when canvas is present, gradient fallback otherwise */
 .auth-wrapper {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
   background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 60%, #0e2a38 100%);
-  padding: 2rem;
+  padding: 1.5rem;
+  position: relative;
+  z-index: 10;
+  overflow-y: auto;
 }
 
-/* Centered card: keeps form readable on all screen sizes */
+/* When a canvas background is present, make wrapper transparent */
+.auth-canvas-bg .auth-wrapper,
+body.has-canvas .auth-wrapper {
+  background: transparent;
+}
+
+/* Auth card — white card with subtle glow */
 .auth-card {
-  background: #fff;
-  border-radius: 16px;
-  padding: 2.5rem 2.25rem;
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 2.25rem 2rem;
   max-width: 440px;
   width: 100%;
-  box-shadow: 0 16px 48px rgba(0,0,0,.35);
+  box-shadow: 0 20px 60px rgba(0,0,0,.35), 0 0 0 1px rgba(0,212,255,.08);
+  border: 1px solid rgba(0,212,255,.15);
+  animation: authCardIn .45s cubic-bezier(.22,1,.36,1) both;
 }
 
-/* Wider card when the form has more fields (e.g. registration) */
-.auth-card-wide {
-  max-width: 500px;
+@keyframes authCardIn {
+  from { opacity: 0; transform: translateY(20px) scale(.98); }
+  to   { opacity: 1; transform: translateY(0)   scale(1); }
 }
 
-/* Short intro paragraph on register / similar pages */
-.auth-intro {
-  font-size: 0.85rem;
-}
+.auth-card-wide  { max-width: 520px; }
 
-.auth-error-list {
-  font-size: 0.875rem;
-}
+/* Logo row */
+.auth-logo      { display:flex; align-items:center; gap:.65rem; margin-bottom:1.5rem; }
+.auth-logo-icon { width:48px; height:48px; border-radius:12px; background:linear-gradient(135deg,var(--navy),var(--navy-mid)); display:flex; align-items:center; justify-content:center; border:1.5px solid rgba(0,212,255,.25); box-shadow:0 0 18px rgba(0,212,255,.12); flex-shrink:0; }
+.auth-logo-text { font-family:'Space Mono',monospace; font-weight:700; font-size:1.2rem; color:var(--navy); }
+.auth-logo-sub  { font-size:.72rem; color:var(--muted); display:block; line-height:1.2; margin-top:.1rem; }
 
-/* Page title on auth screens — matches dashboard “Space Mono + navy” look */
-.auth-heading {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--navy);
-}
+/* Headings */
+.auth-heading { font-size:1.3rem; font-weight:700; color:var(--navy); font-family:'Space Mono',monospace; }
+.auth-lead    { font-size:.85rem; color:var(--muted); }
+.auth-alert   { font-size:.875rem; }
+.auth-intro   { font-size:.85rem; }
 
-/* Short line under the title */
-.auth-lead {
-  font-size: 0.85rem;
-}
-
-/* Error banner: slightly smaller type so the card stays compact */
-.auth-alert {
-  font-size: 0.875rem;
-}
-
-/* Primary action: brand navy + mono label (same family as CIRMS logo) */
+/* Submit button */
 .auth-submit {
   font-family: 'Space Mono', monospace;
   font-weight: 700;
-  letter-spacing: 0.05em;
-  background: var(--navy);
+  letter-spacing: .05em;
+  background: linear-gradient(135deg, #0d1b2a, #1b3a52);
+  color: #fff;
   border: none;
+  transition: filter .2s, box-shadow .2s;
 }
-
 .auth-submit:hover {
-  background: var(--navy-mid);
+  filter: brightness(1.15);
+  box-shadow: 0 4px 20px rgba(0,170,204,.3);
+  color: #fff;
 }
 
-/* “No account?” row */
-.auth-footer-text {
-  font-size: 0.82rem;
-}
-
+/* Register / forgot-password links */
 .auth-register-link {
   color: var(--cyan-dim);
   font-weight: 600;
   text-decoration: none;
 }
+.auth-register-link:hover { color: var(--cyan); text-decoration: underline; }
 
-.auth-register-link:hover {
-  color: var(--cyan);
-  text-decoration: underline;
+/* Input group improvements on auth pages */
+.auth-card .input-group-text {
+  background: #f8fafc;
+  border-color: var(--border);
+  color: var(--muted);
+}
+.auth-card .form-control {
+  border-color: var(--border);
+}
+.auth-card .form-control:focus {
+  border-color: var(--cyan-dim);
+  box-shadow: 0 0 0 3px rgba(0,212,255,.1);
+}
+
+/* Security trust tags below form */
+.auth-security-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem;
+  justify-content: center;
+  margin-top: 1rem;
+}
+.auth-security-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: .28rem;
+  font-size: .67rem;
+  color: #64748b;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  padding: .18rem .55rem;
+  white-space: nowrap;
+}
+
+/* Session timeout banner */
+.timeout-banner {
+  background: #fffbeb;
+  border: 1px solid #f59e0b;
+  border-radius: 8px;
+  padding: .6rem .9rem;
+  font-size: .82rem;
+  color: #92400e;
+  margin-bottom: 1rem;
 }
 
 .auth-logo {
@@ -603,26 +484,181 @@ body {
 }
 
 /* ── Utility ─────────────────────────────────────────────── */
-.mono { font-family: 'Space Mono', monospace; }
-.text-cyan { color: var(--cyan-dim); }
-.text-navy { color: var(--navy); }
+.mono       { font-family: 'Space Mono', monospace; }
+.text-cyan  { color: var(--cyan-dim); }
+.text-navy  { color: var(--navy); }
 
-/* ── Responsive ──────────────────────────────────────────── */
+/* ── Dashboard: stat card entrance animation ────────────── */
+@keyframes statCardEnter {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.stat-enter {
+  animation: statCardEnter .45s cubic-bezier(.22,1,.36,1) both;
+}
+
+/* Critical stat card — subtle red pulse when count > 0 */
+@keyframes criticalPulse {
+  0%, 100% { box-shadow: var(--shadow); }
+  50%       { box-shadow: 0 0 0 4px rgba(239,68,68,.14), var(--shadow); }
+}
+.stat-card-critical {
+  animation: statCardEnter .45s cubic-bezier(.22,1,.36,1) .21s both,
+             criticalPulse 2.8s ease-in-out 1s infinite;
+}
+
+/* SLA-breached table row highlight */
+.row-sla-breach                  { background: #fff8f8 !important; }
+.row-sla-breach:hover            { background: #fff0f0 !important; }
+
+/* Pill-shaped muted badge (chart labels, "Last 7 days", etc.) */
+.badge-pill-muted {
+  font-size: .72rem;
+  background: #f0f4f8;
+  color: #64748b;
+  border: 1px solid #dde3ea;
+  border-radius: 20px;
+  padding: .2rem .65rem;
+  white-space: nowrap;
+}
+
+/* ── Pagination ──────────────────────────────────────────── */
+.pagination .page-link {
+  color: var(--navy);
+  border-color: var(--border);
+  font-size: .82rem;
+  padding: .35rem .65rem;
+}
+.pagination .page-item.active .page-link {
+  background: var(--navy);
+  border-color: var(--navy);
+  color: #fff;
+}
+.pagination .page-link:hover { background: var(--bg); }
+
+/* ── Auth pages: animated background support ─────────────── */
+/* When a canvas fills the body the auth-wrapper needs to scroll */
+body:has(#bg-canvas) {
+  overflow: auto;
+  background: #060f1a;
+}
+body:has(#bg-canvas) .auth-wrapper {
+  background: transparent;
+}
+
+/* ── Incident view page ──────────────────────────────────── */
+.detail-label {
+  font-size: .75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--muted);
+  margin-bottom: .2rem;
+}
+.detail-value {
+  font-size: .9rem;
+  color: #1e293b;
+}
+
+/* Timeline / notes feed */
+.note-feed { display: flex; flex-direction: column; gap: .9rem; }
+.note-item {
+  display: flex;
+  gap: .75rem;
+  align-items: flex-start;
+}
+.note-avatar {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: var(--navy);
+  color: var(--cyan);
+  display: flex; align-items: center; justify-content: center;
+  font-size: .9rem;
+  flex-shrink: 0;
+}
+.note-body {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: .7rem .9rem;
+  flex: 1;
+}
+.note-body.note-internal {
+  background: #fffbeb;
+  border-color: rgba(245,158,11,.3);
+}
+.note-meta { font-size: .73rem; color: var(--muted); margin-bottom: .3rem; }
+.note-text { font-size: .875rem; word-break: break-word; white-space: pre-wrap; }
+
+/* ── Settings page ───────────────────────────────────────── */
+.settings-section-title {
+  font-family: 'Space Mono', monospace;
+  font-size: .8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--muted);
+  margin-bottom: .6rem;
+  padding-bottom: .4rem;
+  border-bottom: 1px solid var(--border);
+}
+
+/* ── Audit log ───────────────────────────────────────────── */
+.audit-action-chip {
+  font-family: 'Space Mono', monospace;
+  font-size: .7rem;
+  padding: .15rem .5rem;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+.audit-auth     { background: rgba(99,102,241,.1);  color: #4338ca; }
+.audit-incident { background: rgba(0,170,204,.1);   color: #0369a1; }
+.audit-user     { background: rgba(34,197,94,.1);   color: #16a34a; }
+.audit-other    { background: rgba(148,163,184,.1); color: #64748b; }
+
+/* ── Responsive: Tablet & Mobile ─────────────────────────── */
 @media (max-width: 768px) {
+
   .content-topbar { display: flex; }
+
+  /* Sidebar: off-canvas drawer on mobile */
   .cirms-sidebar {
     position: fixed;
-    left: 0;
-    top: 0;
-    width: 270px;
-    transform: translateX(-100%);
+    left: 0; top: 0;
+    width: 260px !important;
+    min-width: 260px !important;
     height: 100vh;
-    border-right: 1px solid var(--navy-soft);
+    transform: translateX(-100%);
+    transition: transform .25s ease;
   }
-  .cirms-shell.sidebar-open .cirms-sidebar { transform: translateX(0); }
-  .cirms-shell.sidebar-open .sidebar-backdrop { opacity: 1; pointer-events: auto; }
-  .sidebar-toggle-desktop { display: none; }
-  .cirms-main { padding: 1rem .75rem; }
+
+  /* Force full labels visible when drawer opens */
+  .cirms-sidebar .sidebar-brand-text,
+  .cirms-sidebar .sidebar-user-info,
+  .cirms-sidebar .sidebar-section-title,
+  .cirms-sidebar .sidebar-link span,
+  .cirms-sidebar .sidebar-logout span { display: block !important; }
+  .cirms-sidebar .sidebar-brand-row { justify-content: space-between !important; padding: 1rem !important; }
+  .cirms-sidebar .sidebar-user      { justify-content: flex-start !important; padding: .75rem 1rem !important; }
+  .cirms-sidebar .sidebar-nav       { padding: .65rem !important; }
+  .cirms-sidebar .sidebar-link      { justify-content: flex-start !important; padding: .55rem .7rem !important; }
+  .cirms-sidebar .sidebar-logout    { justify-content: flex-start !important; padding: .75rem 1rem !important; }
+
+  .cirms-shell.sidebar-open .cirms-sidebar       { transform: translateX(0); }
+  .cirms-shell.sidebar-open .sidebar-backdrop    { opacity: 1; pointer-events: auto; }
+
+  .sidebar-toggle-desktop  { display: none !important; }
+
+  .cirms-main  { padding: 1rem .85rem 2rem; }
+  .cirms-card  { padding: 1rem; }
   .page-header { flex-direction: column; align-items: flex-start; gap: .75rem; }
-  .stat-value { font-size: 1.5rem; }
+  .page-title  { font-size: 1.15rem; }
+  .cirms-table th,
+  .cirms-table td { padding: .55rem .65rem; }
+  .auth-card   { padding: 1.5rem 1.25rem; }
+}
+
+@media (max-width: 480px) {
+  .badge-pill-muted { display: none; }
+  .ref-number       { font-size: .73rem; }
+  .cirms-card       { padding: .85rem; }
 }

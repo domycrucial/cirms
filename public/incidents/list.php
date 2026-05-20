@@ -145,8 +145,10 @@ include __DIR__ . '/../../includes/header.php';
             ?>
                 <tr>
                     <td><span class="ref-number"><?= e($inc['reference']) ?></span></td>
-                    <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-                        <?= e($inc['title']) ?>
+                    <td style="max-width:200px;">
+                        <span class="d-block text-truncate" title="<?= e($inc['title']) ?>">
+                            <?= e($inc['title']) ?>
+                        </span>
                     </td>
                     <td style="font-size:.8rem;"><?= e($inc['category_name']) ?></td>
                     <td>
@@ -166,7 +168,7 @@ include __DIR__ . '/../../includes/header.php';
                     </td>
                     <td class="<?= $slaClass ?>" style="font-size:.78rem;"><?= $slaLabel ?></td>
                     <td>
-                        <a href="<?= APP_URL ?>/public/incidents/view.php?id=<?= $inc['id'] ?>"
+                        <a href="<?= APP_URL ?>/public/incidents/view.php?ref=<?= e($inc['reference']) ?>"
                            class="btn btn-sm btn-outline-secondary">View</a>
                     </td>
                 </tr>

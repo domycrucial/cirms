@@ -142,17 +142,24 @@ $pageTitle = 'Trend Reports';
 include __DIR__ . '/../../includes/header.php';
 ?>
 
-<!-- Chart.js loaded here so it is available before DOMContentLoaded fires -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+<!-- ApexCharts replaces Chart.js for all trend charts -->
+<script src="https://cdn.jsdelivr.net/npm/apexcharts@3.49.0/dist/apexcharts.min.js"></script>
 
 <div class="page-header">
     <div>
-        <h1 class="page-title"><i class="bi bi-graph-up-arrow me-2 text-cyan"></i>Trend Reports</h1>
+        <h1 class="page-title">
+            <i class="bi bi-graph-up-arrow me-2 text-cyan"></i>Trend Reports
+        </h1>
         <p class="page-subtitle">12-month incident trends, category analysis, and response-time metrics</p>
     </div>
-    <a href="<?= APP_URL ?>/public/analytics/export.php" class="btn btn-outline-secondary btn-sm">
-        <i class="bi bi-download me-1"></i> Export CSV
-    </a>
+    <div class="d-flex gap-2">
+        <a href="<?= APP_URL ?>/public/analytics/overview.php" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-bar-chart-fill me-1"></i> Overview
+        </a>
+        <a href="<?= APP_URL ?>/public/analytics/export.php" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-download me-1"></i> Export CSV
+        </a>
+    </div>
 </div>
 
 <!-- ── KPI Summary ────────────────────────────────────────── -->
@@ -196,55 +203,54 @@ include __DIR__ . '/../../includes/header.php';
     </div>
 </div>
 
-<!-- ── 1. Monthly by Severity ─────────────────────────────── -->
+<!-- ── 1. Monthly by Severity (stacked bar) ───────────────── -->
 <div class="cirms-card mb-3">
     <div class="cirms-card-header">
-        <h2 class="cirms-card-title"><i class="bi bi-bar-chart-fill me-2 text-cyan"></i>Monthly Incidents by Severity</h2>
-        <span style="font-size:.75rem;color:var(--muted);background:var(--bg);padding:.2rem .6rem;border-radius:4px;border:1px solid var(--border);">Last 12 months</span>
+        <h2 class="cirms-card-title">
+            <i class="bi bi-bar-chart-fill me-2 text-cyan"></i>Monthly Incidents by Severity
+        </h2>
+        <span class="badge-pill-muted">Last 12 months</span>
     </div>
     <?php if (empty($monthLabels)): ?>
     <div class="text-center py-5 text-muted">
-        <i class="bi bi-inbox fs-1 d-block mb-2 opacity-50"></i>
-        No incident data in the last 12 months.
+        <i class="bi bi-inbox fs-1 d-block mb-2 opacity-50"></i>No incident data in the last 12 months.
     </div>
     <?php else: ?>
-    <canvas id="stackedChart" height="80"></canvas>
+    <div id="chartStacked" style="min-height:280px;"></div>
     <?php endif; ?>
 </div>
 
 <!-- ── 2. By Category + Severity Distribution ─────────────── -->
 <div class="row g-3 mb-3">
-
     <div class="col-md-6">
         <div class="cirms-card h-100">
             <div class="cirms-card-header">
-                <h2 class="cirms-card-title"><i class="bi bi-tag-fill me-2 text-cyan"></i>Incidents by Category</h2>
+                <h2 class="cirms-card-title">
+                    <i class="bi bi-tag-fill me-2 text-cyan"></i>Incidents by Category
+                </h2>
             </div>
             <?php if (empty($byCat)): ?>
             <div class="text-center py-5 text-muted">
                 <i class="bi bi-inbox fs-1 d-block mb-2 opacity-50"></i>No data yet.
             </div>
             <?php else: ?>
-            <div style="position:relative;height:<?= $catChartH ?>px;">
-                <canvas id="catChart"></canvas>
-            </div>
+            <div id="chartCat" style="min-height:<?= $catChartH ?>px;"></div>
             <?php endif; ?>
         </div>
     </div>
-
     <div class="col-md-6">
         <div class="cirms-card h-100">
             <div class="cirms-card-header">
-                <h2 class="cirms-card-title"><i class="bi bi-exclamation-triangle-fill me-2 text-cyan"></i>Severity Distribution</h2>
+                <h2 class="cirms-card-title">
+                    <i class="bi bi-exclamation-triangle-fill me-2 text-cyan"></i>Severity Distribution
+                </h2>
             </div>
             <?php if (empty($bySev)): ?>
             <div class="text-center py-5 text-muted">
                 <i class="bi bi-inbox fs-1 d-block mb-2 opacity-50"></i>No data yet.
             </div>
             <?php else: ?>
-            <div style="max-width:310px;margin:0 auto;padding:.5rem 0;">
-                <canvas id="sevChart"></canvas>
-            </div>
+            <div id="chartSev" style="min-height:280px;"></div>
             <?php endif; ?>
         </div>
     </div>
@@ -252,37 +258,35 @@ include __DIR__ . '/../../includes/header.php';
 
 <!-- ── 3. Status Breakdown + Top Affected Systems ─────────── -->
 <div class="row g-3 mb-3">
-
     <div class="col-md-6">
         <div class="cirms-card h-100">
             <div class="cirms-card-header">
-                <h2 class="cirms-card-title"><i class="bi bi-layers-fill me-2 text-cyan"></i>Status Breakdown</h2>
+                <h2 class="cirms-card-title">
+                    <i class="bi bi-layers-fill me-2 text-cyan"></i>Status Breakdown
+                </h2>
             </div>
             <?php if (empty($byStatus)): ?>
             <div class="text-center py-5 text-muted">
                 <i class="bi bi-inbox fs-1 d-block mb-2 opacity-50"></i>No data yet.
             </div>
             <?php else: ?>
-            <div style="position:relative;height:<?= $statChartH ?>px;">
-                <canvas id="statusChart"></canvas>
-            </div>
+            <div id="chartStatus" style="min-height:<?= $statChartH ?>px;"></div>
             <?php endif; ?>
         </div>
     </div>
-
     <div class="col-md-6">
         <div class="cirms-card h-100">
             <div class="cirms-card-header">
-                <h2 class="cirms-card-title"><i class="bi bi-pc-display me-2 text-cyan"></i>Top Affected Systems</h2>
+                <h2 class="cirms-card-title">
+                    <i class="bi bi-pc-display me-2 text-cyan"></i>Top Affected Systems
+                </h2>
             </div>
             <?php if (empty($topSystems)): ?>
             <div class="text-center py-5 text-muted">
-                <i class="bi bi-inbox fs-1 d-block mb-2 opacity-50"></i>No data yet.
+                <i class="bi bi-inbox fs-1 d-block mb-2 opacity-50"></i>No affected systems recorded.
             </div>
             <?php else: ?>
-            <div style="position:relative;height:<?= $sysChartH ?>px;">
-                <canvas id="systemsChart"></canvas>
-            </div>
+            <div id="chartSystems" style="min-height:<?= $sysChartH ?>px;"></div>
             <?php endif; ?>
         </div>
     </div>
@@ -291,7 +295,9 @@ include __DIR__ . '/../../includes/header.php';
 <!-- ── 4. Resolution Time vs SLA ──────────────────────────── -->
 <div class="cirms-card mb-3">
     <div class="cirms-card-header">
-        <h2 class="cirms-card-title"><i class="bi bi-stopwatch-fill me-2 text-cyan"></i>Average Resolution Time vs SLA Target</h2>
+        <h2 class="cirms-card-title">
+            <i class="bi bi-stopwatch-fill me-2 text-cyan"></i>Average Resolution Time vs SLA Target
+        </h2>
     </div>
     <?php if (empty($responseTimes)): ?>
     <div class="text-center py-5 text-muted">
@@ -300,7 +306,7 @@ include __DIR__ . '/../../includes/header.php';
     <?php else: ?>
     <div class="row g-4 align-items-start">
         <div class="col-lg-7">
-            <canvas id="resolutionChart" height="130"></canvas>
+            <div id="chartResolution" style="min-height:220px;"></div>
         </div>
         <div class="col-lg-5">
             <table class="cirms-table">
@@ -315,7 +321,7 @@ include __DIR__ . '/../../includes/header.php';
                 <tbody>
                 <?php foreach ($responseTimes as $rt):
                     $target = SLA_HOURS[$rt['severity']] ?? 72;
-                    $avg    = (float)$rt['avg_hours'];
+                    $avg    = (float) $rt['avg_hours'];
                     $met    = $avg <= $target;
                 ?>
                 <tr>
@@ -342,198 +348,131 @@ include __DIR__ . '/../../includes/header.php';
     <?php endif; ?>
 </div>
 
-<!-- Step 1: PHP data → JS variables (only PHP echos in this block) -->
+<style>
+.badge-pill-muted {
+    font-size:.72rem; background:#f0f4f8; color:#64748b;
+    border:1px solid #dde3ea; border-radius:20px; padding:.2rem .6rem;
+}
+</style>
+
+<!-- PHP data → JS (only PHP echos here) -->
+<script>var TR = <?= $chartData ?>; var TR_SHOW = <?= $chartFlags ?>;</script>
+
+<!-- ApexCharts initialisation — zero PHP inside -->
 <script>
-var TR = <?= $chartData ?>;
-var TR_SHOW = <?= $chartFlags ?>;
-</script>
+(function () {
+    'use strict';
 
-<!-- Step 2: Pure JavaScript — zero PHP inside this block -->
-<script>
-document.addEventListener('DOMContentLoaded', function () {
+    var FONT = "'DM Sans', sans-serif";
+    var SEV_COLORS    = { Critical:'#ef4444', High:'#f97316', Medium:'#f59e0b', Low:'#22c55e' };
+    var STATUS_COLORS = { New:'#6366f1', Acknowledged:'#0ea5e9', 'In Progress':'#f59e0b', Resolved:'#22c55e', Closed:'#94a3b8' };
+    var CAT_PALETTE   = ['#0ea5e9','#6366f1','#f59e0b','#ef4444','#22c55e','#f97316','#a78bfa','#fb7185'];
 
-    Chart.defaults.font.family = "'DM Sans', sans-serif";
-    Chart.defaults.color = '#64748b';
-
-    /* Center-total plugin for doughnut charts */
-    Chart.register({
-        id: 'centerText',
-        afterDraw: function (chart) {
-            if (chart.config.type !== 'doughnut') return;
-            var ca = chart.chartArea;
-            if (!ca) return;
-            var total = chart.data.datasets[0].data.reduce(function (a, b) { return a + b; }, 0);
-            var cx = (ca.left + ca.right) / 2;
-            var cy = (ca.top  + ca.bottom) / 2;
-            var c  = chart.ctx;
-            c.save();
-            c.textAlign = 'center'; c.textBaseline = 'middle';
-            c.fillStyle = '#0d1b2a';
-            c.font = 'bold 22px "Space Mono", monospace';
-            c.fillText(total, cx, cy - 9);
-            c.font = '11px "DM Sans", sans-serif'; c.fillStyle = '#8899aa';
-            c.fillText('total', cx, cy + 12);
-            c.restore();
-        }
-    });
-
-    var SEV_COLORS = { Low:'#22c55e', Medium:'#f59e0b', High:'#f97316', Critical:'#ef4444' };
-    var STATUS_COLORS = {
-        New:'#6366f1', Acknowledged:'#0ea5e9',
-        'In Progress':'#f59e0b', Resolved:'#22c55e', Closed:'#94a3b8'
-    };
-    var CAT_PALETTE = ['#0d1b2a','#00aacc','#6366f1','#f59e0b','#f97316','#ef4444','#22c55e','#a78bfa'];
-
-    function pctLabel(ctx) {
-        var vals = ctx.dataset.data;
-        var total = vals.reduce(function (a, b) { return a + b; }, 0);
-        var val = (ctx.chart.config.type === 'doughnut')
-            ? ctx.parsed
-            : (ctx.parsed.x !== undefined ? ctx.parsed.x : ctx.parsed.y);
-        var pct = total > 0 ? ((val / total) * 100).toFixed(1) : '0.0';
-        return ' ' + val + ' (' + pct + '%)';
+    /* ── 1. Monthly stacked bar ───────────────────────────── */
+    if (TR_SHOW.monthly && document.getElementById('chartStacked')) {
+        new ApexCharts(document.getElementById('chartStacked'), {
+            chart  : { type:'bar', height:280, stacked:true, toolbar:{ show:false }, fontFamily:FONT, animations:{ enabled:true, speed:800 } },
+            series : [
+                { name:'Critical', data: TR.critical },
+                { name:'High',     data: TR.high     },
+                { name:'Medium',   data: TR.medium   },
+                { name:'Low',      data: TR.low      },
+            ],
+            colors : ['#ef4444','#f97316','#f59e0b','#22c55e'],
+            xaxis  : { categories: TR.monthLabels, labels:{ style:{ fontSize:'11px', colors:'#94a3b8' } } },
+            yaxis  : { labels:{ style:{ fontSize:'11px', colors:'#94a3b8' } } },
+            plotOptions: { bar:{ borderRadius:3, columnWidth:'55%' } },
+            legend : { position:'top', fontSize:'12px' },
+            grid   : { borderColor:'#f0f4f8', strokeDashArray:4 },
+            dataLabels: { enabled:false },
+            tooltip: { theme:'light', shared:true, intersect:false },
+        }).render();
     }
 
-    function hBarOpts() {
-        return {
-            indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { display: false }, tooltip: { callbacks: { label: pctLabel } } },
-            scales: {
-                x: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: 'rgba(0,0,0,.05)' } },
-                y: { grid: { display: false } }
-            }
-        };
+    /* ── 2. By category – horizontal bar ─────────────────── */
+    if (TR_SHOW.cat && document.getElementById('chartCat')) {
+        new ApexCharts(document.getElementById('chartCat'), {
+            chart  : { type:'bar', fontFamily:FONT, toolbar:{ show:false }, animations:{ enabled:true, speed:700 } },
+            series : [{ name:'Incidents', data: TR.catData }],
+            xaxis  : { categories: TR.catLabels, labels:{ style:{ fontSize:'11px', colors:'#94a3b8' } } },
+            plotOptions: { bar:{ horizontal:true, borderRadius:4, distributed:true, barHeight:'60%' } },
+            colors : CAT_PALETTE,
+            dataLabels: { enabled:true, style:{ fontSize:'11px' } },
+            legend : { show:false },
+            grid   : { borderColor:'#f0f4f8' },
+            tooltip: { theme:'light' },
+        }).render();
     }
 
-    /* 1. Monthly stacked bar */
-    if (TR_SHOW.monthly) {
-        new Chart(document.getElementById('stackedChart'), {
-            type: 'bar',
-            data: {
-                labels: TR.monthLabels,
-                datasets: [
-                    { label: 'Critical', data: TR.critical, backgroundColor: '#ef4444', borderRadius: 3 },
-                    { label: 'High',     data: TR.high,     backgroundColor: '#f97316', borderRadius: 3 },
-                    { label: 'Medium',   data: TR.medium,   backgroundColor: '#f59e0b', borderRadius: 3 },
-                    { label: 'Low',      data: TR.low,      backgroundColor: '#22c55e', borderRadius: 3 }
-                ]
-            },
-            options: {
-                plugins: {
-                    legend: { position: 'top' },
-                    tooltip: {
-                        mode: 'index', intersect: false,
-                        callbacks: {
-                            footer: function (items) {
-                                return 'Total: ' + items.reduce(function (s, i) { return s + i.parsed.y; }, 0);
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    x: { stacked: true, grid: { display: false } },
-                    y: { stacked: true, beginAtZero: true, ticks: { stepSize: 1 } }
+    /* ── 3. Severity donut ────────────────────────────────── */
+    if (TR_SHOW.sev && document.getElementById('chartSev')) {
+        new ApexCharts(document.getElementById('chartSev'), {
+            chart  : { type:'donut', height:280, fontFamily:FONT, animations:{ enabled:true, speed:900 } },
+            series : TR.sevData,
+            labels : TR.sevLabels,
+            colors : TR.sevLabels.map(function(l){ return SEV_COLORS[l]||'#94a3b8'; }),
+            plotOptions: { pie:{ donut:{ size:'65%', labels:{ show:true,
+                total:{ show:true, showAlways:true, label:'Total', fontSize:'13px', color:'#64748b',
+                    formatter: function(w){ return w.globals.seriesTotals.reduce(function(a,b){return a+b;},0); }
                 }
-            }
-        });
+            } } } },
+            dataLabels: { enabled:true, formatter: function(v){ return Math.round(v)+'%'; } },
+            legend : { position:'bottom', fontSize:'12px' },
+            tooltip: { theme:'light', y:{ formatter: function(v){ return v+' incidents'; } } },
+        }).render();
     }
 
-    /* 2. Incidents by category (horizontal bar) */
-    if (TR_SHOW.cat) {
-        new Chart(document.getElementById('catChart'), {
-            type: 'bar',
-            data: {
-                labels: TR.catLabels,
-                datasets: [{ data: TR.catData, backgroundColor: CAT_PALETTE.slice(0, TR.catData.length), borderRadius: 4, borderSkipped: false }]
-            },
-            options: hBarOpts()
-        });
+    /* ── 4. Status breakdown – horizontal bar ────────────── */
+    if (TR_SHOW.status && document.getElementById('chartStatus')) {
+        new ApexCharts(document.getElementById('chartStatus'), {
+            chart  : { type:'bar', fontFamily:FONT, toolbar:{ show:false }, animations:{ enabled:true, speed:700 } },
+            series : [{ name:'Incidents', data: TR.statData }],
+            xaxis  : { categories: TR.statLabels, labels:{ style:{ fontSize:'11px', colors:'#94a3b8' } } },
+            plotOptions: { bar:{ horizontal:true, borderRadius:4, distributed:true, barHeight:'55%' } },
+            colors : TR.statLabels.map(function(l){ return STATUS_COLORS[l]||'#94a3b8'; }),
+            dataLabels: { enabled:true, style:{ fontSize:'11px' } },
+            legend : { show:false },
+            grid   : { borderColor:'#f0f4f8' },
+            tooltip: { theme:'light' },
+        }).render();
     }
 
-    /* 3. Severity distribution donut */
-    if (TR_SHOW.sev) {
-        new Chart(document.getElementById('sevChart'), {
-            type: 'doughnut',
-            data: {
-                labels: TR.sevLabels,
-                datasets: [{
-                    data: TR.sevData,
-                    backgroundColor: TR.sevLabels.map(function (s) { return SEV_COLORS[s] || '#94a3b8'; }),
-                    borderWidth: 3, borderColor: '#fff', hoverOffset: 8
-                }]
-            },
-            options: {
-                cutout: '65%',
-                plugins: {
-                    legend: { position: 'bottom', labels: { boxWidth: 12, padding: 14, font: { size: 12 } } },
-                    tooltip: { callbacks: { label: pctLabel } }
-                }
-            }
-        });
+    /* ── 5. Top affected systems ──────────────────────────── */
+    if (TR_SHOW.systems && document.getElementById('chartSystems')) {
+        new ApexCharts(document.getElementById('chartSystems'), {
+            chart  : { type:'bar', fontFamily:FONT, toolbar:{ show:false }, animations:{ enabled:true, speed:700 } },
+            series : [{ name:'Incidents', data: TR.sysData }],
+            xaxis  : { categories: TR.sysLabels, labels:{ style:{ fontSize:'11px', colors:'#94a3b8' } } },
+            plotOptions: { bar:{ horizontal:true, borderRadius:4, barHeight:'55%', distributed:true } },
+            colors : CAT_PALETTE,
+            dataLabels: { enabled:true, style:{ fontSize:'11px' } },
+            legend : { show:false },
+            grid   : { borderColor:'#f0f4f8' },
+            tooltip: { theme:'light' },
+        }).render();
     }
 
-    /* 4. Status breakdown (horizontal bar) */
-    if (TR_SHOW.status) {
-        new Chart(document.getElementById('statusChart'), {
-            type: 'bar',
-            data: {
-                labels: TR.statLabels,
-                datasets: [{ data: TR.statData, backgroundColor: TR.statLabels.map(function (s) { return STATUS_COLORS[s] || '#94a3b8'; }), borderRadius: 4, borderSkipped: false }]
-            },
-            options: hBarOpts()
-        });
+    /* ── 6. Resolution time vs SLA target ────────────────── */
+    if (TR_SHOW.rt && document.getElementById('chartResolution')) {
+        var slaTargets = TR.rtLabels.map(function(l){ return TR.slaMap[l] || 72; });
+        new ApexCharts(document.getElementById('chartResolution'), {
+            chart  : { type:'bar', height:220, fontFamily:FONT, toolbar:{ show:false }, animations:{ enabled:true, speed:800 } },
+            series : [
+                { name:'Actual (h)',     data: TR.rtActual   },
+                { name:'SLA Target (h)', data: slaTargets    },
+            ],
+            colors : ['#6366f1','#22c55e'],
+            xaxis  : { categories: TR.rtLabels, labels:{ style:{ fontSize:'11px', colors:'#94a3b8' } } },
+            yaxis  : { title:{ text:'Hours', style:{ fontSize:'11px' } }, labels:{ style:{ fontSize:'11px' } } },
+            plotOptions: { bar:{ columnWidth:'45%', borderRadius:3 } },
+            legend : { position:'top', fontSize:'12px' },
+            grid   : { borderColor:'#f0f4f8', strokeDashArray:4 },
+            dataLabels: { enabled:true, style:{ fontSize:'10px' }, formatter: function(v){ return v+'h'; } },
+            tooltip: { theme:'light', shared:true },
+        }).render();
     }
 
-    /* 5. Top affected systems (horizontal bar) */
-    if (TR_SHOW.systems) {
-        new Chart(document.getElementById('systemsChart'), {
-            type: 'bar',
-            data: {
-                labels: TR.sysLabels,
-                datasets: [{ data: TR.sysData, backgroundColor: 'rgba(0,170,204,.7)', borderColor: '#00aacc', borderWidth: 1, borderRadius: 4, borderSkipped: false }]
-            },
-            options: hBarOpts()
-        });
-    }
-
-    /* 6. Resolution time vs SLA (grouped bar) */
-    if (TR_SHOW.rt) {
-        var rtTargets = TR.rtLabels.map(function (s) { return TR.slaMap[s] || 72; });
-        new Chart(document.getElementById('resolutionChart'), {
-            type: 'bar',
-            data: {
-                labels: TR.rtLabels,
-                datasets: [
-                    {
-                        label: 'Avg Actual (hrs)',
-                        data: TR.rtActual,
-                        backgroundColor: TR.rtLabels.map(function (s) { return SEV_COLORS[s] || '#94a3b8'; }),
-                        borderRadius: 4
-                    },
-                    {
-                        label: 'SLA Target (hrs)',
-                        data: rtTargets,
-                        backgroundColor: 'rgba(148,163,184,.25)',
-                        borderColor: '#94a3b8',
-                        borderWidth: 1.5,
-                        borderRadius: 4
-                    }
-                ]
-            },
-            options: {
-                plugins: {
-                    legend: { position: 'top' },
-                    tooltip: { callbacks: { label: function (ctx) { return ' ' + ctx.parsed.y + 'h — ' + ctx.dataset.label; } } }
-                },
-                scales: {
-                    y: { beginAtZero: true, title: { display: true, text: 'Hours' }, ticks: { stepSize: 1 } },
-                    x: { grid: { display: false } }
-                }
-            }
-        });
-    }
-
-}); /* end DOMContentLoaded */
+}());
 </script>
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>

@@ -104,8 +104,11 @@ function user_password_hash_from_row(array $row): ?string
 function session_start_secure(): void
 {
     if (session_status() === PHP_SESSION_NONE) {
+        // lifetime=0 makes this a browser-session cookie (no absolute expiry).
+        // Idle timeout is enforced server-side inside require_login() using
+        // SESSION_LIFETIME so the timer resets on every page load (sliding window).
         session_set_cookie_params([
-            'lifetime' => SESSION_LIFETIME,
+            'lifetime' => 0,
             'path'     => '/',
             'secure'   => (APP_ENV === 'production'),
             'httponly' => true,
@@ -123,8 +126,34 @@ function is_logged_in(): bool
 }
 
 /**
+ * Emit defensive HTTP security headers.
+ * Call once per page, before any output.
+ * Prevents clickjacking, MIME-sniffing, and leaking the referrer.
+ */
+function send_security_headers(): void
+{
+    // Deny framing completely — blocks clickjacking attacks (OWASP A05)
+    header('X-Frame-Options: DENY');
+
+    // Prevent MIME-type sniffing — stops content-type confusion attacks
+    header('X-Content-Type-Options: nosniff');
+
+    // Send only the origin (not the full URL) for cross-origin requests
+    header('Referrer-Policy: strict-origin-when-cross-origin');
+
+    // Restrict browser features not needed by this app
+    header('Permissions-Policy: camera=(), microphone=(), geolocation=()');
+
+    // Strict Transport Security — 1 year HSTS (only active on production HTTPS)
+    if ((APP_ENV ?? 'development') === 'production') {
+        header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
+    }
+}
+
+/**
  * Require login – redirect to login page if not authenticated.
- * Optional: restrict to specific roles.
+ * Also enforces server-side session lifetime so an idle session
+ * is invalidated server-side (not just via cookie expiry).
  *
  * @param array $roles  e.g. ['admin','officer']  (empty = any logged-in user)
  */
@@ -133,6 +162,20 @@ function require_login(array $roles = []): void
     if (!is_logged_in()) {
         redirect('/public/login.php');
     }
+
+    // ── Server-side idle session expiry ──────────────────────
+    // login_time is set on successful auth and refreshed on every
+    // page load. If more than SESSION_LIFETIME seconds have passed
+    // without activity, destroy the session and redirect to login.
+    $idleSeconds = time() - ($_SESSION['login_time'] ?? time());
+    if ($idleSeconds > SESSION_LIFETIME) {
+        session_unset();
+        session_destroy();
+        redirect('/public/login.php?timeout=1');
+    }
+    // Refresh the activity timestamp so it resets on each request
+    $_SESSION['login_time'] = time();
+
     if ($roles && !in_array($_SESSION['user_role'], $roles, true)) {
         http_response_code(403);
         die(render_error(403, 'You do not have permission to access this page.'));
@@ -280,6 +323,20 @@ function get_flash(): ?array
     return $flash;
 }
 
+// ---- Formatting Helpers ------------------------------------
+
+/**
+ * Format a byte count into a human-readable string (KB, MB, GB).
+ * Used in file-attachment lists throughout the incident view page.
+ */
+function format_bytes(int $bytes, int $decimals = 1): string
+{
+    if ($bytes < 1024)       return $bytes . ' B';
+    if ($bytes < 1048576)    return round($bytes / 1024, $decimals) . ' KB';
+    if ($bytes < 1073741824) return round($bytes / 1048576, $decimals) . ' MB';
+    return round($bytes / 1073741824, $decimals) . ' GB';
+}
+
 // ---- Error Page --------------------------------------------
 
 function render_error(int $code, string $message): string
@@ -289,11 +346,3 @@ function render_error(int $code, string $message): string
             <a href='" . APP_URL . "'>Go to homepage</a></body></html>";
 }
 
-// ---- File Size Formatter -----------------------------------
-
-function format_bytes(int $bytes): string
-{
-    if ($bytes >= 1048576) return round($bytes / 1048576, 1) . ' MB';
-    if ($bytes >= 1024)    return round($bytes / 1024, 1) . ' KB';
-    return $bytes . ' B';
-}

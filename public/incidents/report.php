@@ -342,11 +342,14 @@ include __DIR__ . '/../../includes/header.php';
     <!-- Detailed description — minimum 50 chars enforced server-side -->
     <div class="mb-3">
         <label for="description" class="form-label">Detailed Description *</label>
-        <textarea id="description" name="description" class="form-control"
+        <textarea id="description" name="description" class="form-control description-field"
                   rows="6" required
                   placeholder="Describe what happened, when you noticed it, what actions you took, and any other details that will help the IT team investigate."
         ><?= e($_POST['description'] ?? '') ?></textarea>
-        <div class="form-hint" id="descCounter">Minimum 50 characters required.</div>
+        <div class="d-flex justify-content-between align-items-center mt-1">
+            <div class="form-hint mb-0" id="descCounter">Minimum 50 characters required.</div>
+            <div class="form-hint mb-0" id="descCharCount" style="font-variant-numeric:tabular-nums;"></div>
+        </div>
     </div>
 
     <!-- Ongoing incident flag -->
@@ -383,8 +386,8 @@ include __DIR__ . '/../../includes/header.php';
     </div>
 
     <!-- Submit and Cancel buttons -->
-    <div class="d-flex gap-2">
-        <button type="submit" class="btn btn-dark btn-cirms btn-primary-cirms">
+    <div class="d-flex gap-2 flex-wrap">
+        <button type="submit" class="btn btn-dark btn-cirms btn-primary-cirms" id="submitReportBtn">
             <i class="bi bi-send-fill me-1"></i> Submit Incident Report
         </button>
         <a href="<?= APP_URL ?>/public/dashboard.php" class="btn btn-outline-secondary">
@@ -394,5 +397,53 @@ include __DIR__ . '/../../includes/header.php';
 
 </form>
 </div>
+
+<style>
+/* ── Description field responsive fix ─────────────────────── */
+.description-field {
+    word-break: break-word;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
+    resize: vertical;
+    min-height: 150px;
+    width: 100%;
+    box-sizing: border-box;
+}
+@media (max-width: 576px) {
+    .description-field { min-height: 120px; font-size: .85rem; }
+    .cirms-card { padding: 1rem !important; }
+}
+</style>
+
+<script>
+(function () {
+    /* ── Description char counter (supplements cirms.js) ─── */
+    var desc    = document.getElementById('description');
+    var counter = document.getElementById('descCharCount');
+    if (desc && counter) {
+        function updateCharCount() {
+            var n = desc.value.length;
+            counter.textContent = n + ' chars';
+            counter.style.color = n >= 50 ? '#16a34a' : '#ef4444';
+        }
+        desc.addEventListener('input', updateCharCount);
+        updateCharCount();
+    }
+
+    /* ── Submit button spinner ───────────────────────────── */
+    var form = document.getElementById('incidentForm');
+    var btn  = document.getElementById('submitReportBtn');
+    if (form && btn) {
+        form.addEventListener('submit', function () {
+            var desc = document.getElementById('description');
+            if (desc && desc.value.trim().length < 50) return; // let cirms.js block it
+            btn.disabled = true;
+            btn.innerHTML =
+                '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>'
+                + 'Submitting…';
+        });
+    }
+}());
+</script>
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>

@@ -2,7 +2,7 @@
 // ============================================================
 // FILE:    modules/notifications/mailer.php
 // PURPOSE: Every email the CIRMS system sends goes through
-//          this file. It contains 10 functions:
+//          this file. It contains 11 functions:
 //
 //  FUNCTION 1  — send_email()                   Core SMTP delivery engine
 //  FUNCTION 2  — email_wrap_html()              Branded HTML email template
@@ -14,6 +14,7 @@
 //  FUNCTION 8  — notify_account_created()       → New User   (welcome + login info)
 //  FUNCTION 9  — notify_account_activated()     → User       (account re-enabled)
 //  FUNCTION 10 — notify_role_changed()          → User       (role changed)
+//  FUNCTION 11 — notify_lockout_cleared()       → User       (login lockout removed by admin)
 //
 // HOW TO INSTALL PHPMAILER (run once in PowerShell):
 //   cd C:\xampp\htdocs\cirmsv2
@@ -950,6 +951,56 @@ function notify_role_changed(
         $userEmail,
         $userName,
         "[CIRMS] Your Account Role Has Changed to {$new}",
+        $body
+    );
+}
+
+
+// ============================================================
+//  FUNCTION 11 — notify_lockout_cleared()
+//
+//  RECIPIENT:  The user whose login lockout was removed by admin
+//  TRIGGERED:  When an admin clicks "Unlock" on the Manage Users
+//              page after the user had ≥3 failed login attempts
+//  CALLED BY:  public/users/list.php (unlock_user POST action)
+//
+//  PARAMETERS:
+//    $userEmail — user's email address
+//    $userName  — user's full name
+//
+//  RETURNS: true = sent, false = failed
+// ============================================================
+function notify_lockout_cleared(string $userEmail, string $userName): bool
+{
+    $name      = htmlspecialchars($userName,  ENT_QUOTES, 'UTF-8');
+    $emailSafe = htmlspecialchars($userEmail, ENT_QUOTES, 'UTF-8');
+    $loginUrl  = APP_URL . '/public/login.php';
+
+    $body = "
+        <p>Dear {$name},</p>
+
+        <p>Your CIRMS account was temporarily locked after multiple unsuccessful sign-in
+           attempts. The IT Security team has reviewed your account and cleared the lockout
+           — you may now sign in again.</p>
+
+        <table class='info-table'>
+            <tr><td>Account Email:</td><td>{$emailSafe}</td></tr>
+            <tr><td>Unlocked At:</td>  <td>" . date('d M Y, H:i') . "</td></tr>
+        </table>
+
+        <a href='{$loginUrl}' class='btn-green'>&#128275; Sign In Now &rarr;</a>
+
+        <hr class='divider'>
+        <p style='color:#64748b;font-size:.82rem;'>
+            If you believe someone else attempted to access your account, please contact
+            the IT Security team immediately and change your password after signing in.
+        </p>
+    ";
+
+    return send_email(
+        $userEmail,
+        $userName,
+        '[CIRMS] Your Account Lockout Has Been Cleared',
         $body
     );
 }

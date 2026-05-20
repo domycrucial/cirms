@@ -16,36 +16,53 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-// ── Sidebar toggle (desktop collapse + mobile slide-in) ─────
+// ── Sidebar: desktop collapse ↔ mobile drawer ───────────────
 document.addEventListener('DOMContentLoaded', () => {
-    const shell = document.querySelector('.cirms-shell');
+    const shell    = document.getElementById('appShell');
+    const backdrop = document.getElementById('sidebarBackdrop');
     if (!shell) return;
 
-    const desktopQuery = window.matchMedia('(min-width: 769px)');
-    const toggles = document.querySelectorAll('[data-sidebar-toggle]');
-    const closes = document.querySelectorAll('[data-sidebar-close], .sidebar-link, .sidebar-logout');
+    const isMobile = () => window.innerWidth <= 768;
 
-    const applyDesktopState = () => {
-        if (!desktopQuery.matches) return;
-        const collapsed = localStorage.getItem('cirms.sidebar.collapsed') === '1';
+    /* Restore desktop collapsed state */
+    const applyDesktop = () => {
+        if (isMobile()) return;
+        const collapsed = localStorage.getItem('cirms.sb.collapsed') === '1';
         shell.classList.toggle('sidebar-collapsed', collapsed);
         shell.classList.remove('sidebar-open');
     };
 
-    const toggleSidebar = () => {
-        if (desktopQuery.matches) {
+    const open  = () => { shell.classList.add('sidebar-open');    };
+    const close = () => { shell.classList.remove('sidebar-open'); };
+
+    const toggle = () => {
+        if (isMobile()) {
+            shell.classList.contains('sidebar-open') ? close() : open();
+        } else {
             const next = !shell.classList.contains('sidebar-collapsed');
             shell.classList.toggle('sidebar-collapsed', next);
-            localStorage.setItem('cirms.sidebar.collapsed', next ? '1' : '0');
-        } else {
-            shell.classList.toggle('sidebar-open');
+            localStorage.setItem('cirms.sb.collapsed', next ? '1' : '0');
         }
     };
 
-    toggles.forEach(btn => btn.addEventListener('click', toggleSidebar));
-    closes.forEach(el => el.addEventListener('click', () => shell.classList.remove('sidebar-open')));
-    window.addEventListener('resize', applyDesktopState);
-    applyDesktopState();
+    /* Toggle buttons (desktop collapse btn + mobile hamburger) */
+    document.querySelectorAll('[data-sidebar-toggle]').forEach(btn =>
+        btn.addEventListener('click', toggle)
+    );
+
+    /* Backdrop tap closes drawer on mobile */
+    if (backdrop) backdrop.addEventListener('click', close);
+
+    /* Nav links close the drawer on mobile */
+    document.querySelectorAll('.sb-link, .sb-logout').forEach(el =>
+        el.addEventListener('click', () => { if (isMobile()) close(); })
+    );
+
+    window.addEventListener('resize', () => {
+        if (!isMobile()) { close(); applyDesktop(); }
+    });
+
+    applyDesktop();
 });
 
 // ── Incident Report Form Validation ─────────────────────────
@@ -165,16 +182,45 @@ if (sevSelect) {
     updateColour();
 }
 
-// ── Status filter form auto-submit ───────────────────────────
+// ── Status filter form auto-submit with loading indicator ────
 const filterForm = document.getElementById('filterForm');
 if (filterForm) {
+    let filterSubmitting = false;
     filterForm.querySelectorAll('select').forEach(sel => {
-        sel.addEventListener('change', () => filterForm.submit());
+        sel.addEventListener('change', () => {
+            if (filterSubmitting) return;
+            filterSubmitting = true;
+            // Show subtle loading state on submit button
+            const btn = filterForm.querySelector('[type="submit"]');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Filtering…';
+            }
+            filterForm.submit();
+        });
     });
 }
 
-// ── Tooltips ─────────────────────────────────────────────────
+// ── Global tooltips (Bootstrap) ──────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
-    const tooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-    tooltips.forEach(el => new bootstrap.Tooltip(el));
+    // Bootstrap tooltip on elements with [title] or [data-bs-toggle="tooltip"]
+    document.querySelectorAll('[data-bs-toggle="tooltip"], .text-truncate[title]').forEach(el => {
+        if (typeof bootstrap !== 'undefined') {
+            new bootstrap.Tooltip(el, { trigger: 'hover', placement: 'top' });
+        }
+    });
+});
+
+// ── Animate number counters on page load ─────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.stat-value[data-target]').forEach(el => {
+        const target = parseInt(el.dataset.target, 10) || 0;
+        let current  = 0;
+        const step   = Math.ceil(target / 25) || 1;
+        const timer  = setInterval(() => {
+            current = Math.min(current + step, target);
+            el.textContent = current.toLocaleString();
+            if (current >= target) clearInterval(timer);
+        }, 28);
+    });
 });
