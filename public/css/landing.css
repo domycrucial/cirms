@@ -33,23 +33,23 @@ body.landing-body {
 }
 
 .landing-brand-logo {
-  height: 38px;
-  width: 38px;
-  object-fit: cover;
-  border-radius: 10px; /* Gives the logo a modern app-icon shape */
-  box-shadow: 0 0 10px rgba(0, 212, 255, 0.2);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  height: 42px;
+  width: 42px;
+  object-fit: contain;
+  border-radius: 4px;
+  filter: drop-shadow(0 0 8px rgba(0, 212, 255, 0.3));
+  transition: transform 0.3s ease, filter 0.3s ease;
 }
 
 .landing-brand:hover .landing-brand-logo {
-  transform: scale(1.1);
-  box-shadow: 0 4px 15px rgba(0, 212, 255, 0.6);
+  transform: scale(1.08);
+  filter: drop-shadow(0 0 14px rgba(0, 212, 255, 0.7));
 }
 
 .landing-brand-logo.footer-logo {
-  height: 44px;
-  width: 44px;
-  border-radius: 12px;
+  height: 48px;
+  width: 48px;
+  border-radius: 4px;
 }
 
 .landing-nav-links {

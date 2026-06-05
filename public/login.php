@@ -91,8 +91,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" href="<?= APP_URL ?>/public/assets/images/cirms.png">
-    <title>Sign In – CIRMS</title>
+    <link rel="icon" href="<?= APP_URL ?>/public/assets/images/iaa.png">
+    <title>Sign In – IRS</title>
     <?php require __DIR__ . '/../includes/head_assets.php'; ?>
     <style>
         /* Canvas replaces the default auth-wrapper gradient */
@@ -218,12 +218,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <!-- Logo row -->
         <div class="auth-logo">
             <div class="auth-shield">
-                <img src="<?= APP_URL ?>/public/assets/images/cirms_logo.png"
-                     style="width:32px;height:32px;object-fit:cover;border-radius:8px;" alt="CIRMS">
+                <img src="<?= APP_URL ?>/public/assets/images/iaa.png"
+                     style="width:32px;height:32px;object-fit:contain;border-radius:4px;" alt="IAA">
             </div>
             <div>
-                <div class="auth-logo-text">CIRMS</div>
-                <span class="auth-logo-sub">Campus Cyber Incident Reporting System</span>
+                <div class="auth-logo-text">IRS</div>
+                <span class="auth-logo-sub">Institute of Accountancy Arusha Reporting System</span>
             </div>
         </div>
 
@@ -328,7 +328,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     /* ══════════════════════════════════════════════════════════
        PARTICLE NETWORK BACKGROUND
        Floating nodes connected by lines when within snap distance.
-       Cyan / navy colour palette to match CIRMS branding.
+       Cyan / navy colour palette to match IRS branding.
     ══════════════════════════════════════════════════════════ */
     var canvas = document.getElementById('bg-canvas');
     var ctx    = canvas.getContext('2d');
@@ -425,6 +425,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         var shown = pwdInput.type === 'text';
         pwdInput.type = shown ? 'password' : 'text';
         eyeIcon.className = shown ? 'bi bi-eye' : 'bi bi-eye-slash';
+    });
+
+    /* ══════════════════════════════════════════════════════════
+       EMAIL FIELD — allow only letters, numbers and the @ and .
+       special characters (no other special characters).
+    ══════════════════════════════════════════════════════════ */
+    var emailField = document.getElementById('email');
+    emailField && emailField.addEventListener('input', function () {
+        this.value = this.value.replace(/[^a-zA-Z0-9@.]/g, '');
     });
 
     /* ══════════════════════════════════════════════════════════

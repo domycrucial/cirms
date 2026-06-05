@@ -35,9 +35,9 @@ $isActive   = static function (string $path) use ($scriptPath): string {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" href="<?= APP_URL ?>/public/assets/images/cirms.png">
+    <link rel="icon" href="<?= APP_URL ?>/public/assets/images/iaa.png">
     <meta name="robots" content="noindex, nofollow">
-    <title><?= e($pageTitle ?? 'CIRMS') ?> – CIRMS</title>
+    <title><?= e($pageTitle ?? 'IRS') ?> – IRS</title>
     <?php require __DIR__ . '/head_assets.php'; ?>
     <style>
 /* ── Sidebar layout ──────────────────────────────────────────
@@ -93,11 +93,11 @@ $isActive   = static function (string $path) use ($scriptPath): string {
   min-width: 0;
 }
 .sb-brand-img {
-  width: 32px; height: 32px;
-  border-radius: 8px;
-  object-fit: cover;
+  width: 38px; height: 38px;
+  border-radius: 4px;
+  object-fit: contain;
   flex-shrink: 0;
-  box-shadow: 0 0 10px rgba(0,212,255,.2);
+  filter: drop-shadow(0 0 6px rgba(0,212,255,.25));
 }
 .sb-brand-text { overflow:hidden; text-overflow:ellipsis; }
 
@@ -311,9 +311,9 @@ $isActive   = static function (string $path) use ($scriptPath): string {
     <!-- Zone 1 – Brand row -->
     <div class="sb-brand">
         <a href="<?= APP_URL ?>/public/dashboard.php" class="sb-brand-link" title="Dashboard">
-            <img src="<?= APP_URL ?>/public/assets/images/cirms_logo.png"
-                 alt="CIRMS" class="sb-brand-img">
-            <span class="sb-brand-text">CIRMS</span>
+            <img src="<?= APP_URL ?>/public/assets/images/iaa.png"
+                 alt="IRS" class="sb-brand-img">
+            <span class="sb-brand-text">IRS</span>
         </a>
         <button class="sb-toggle" data-sidebar-toggle
                 aria-label="Collapse sidebar" title="Collapse sidebar">
@@ -412,7 +412,7 @@ $isActive   = static function (string $path) use ($scriptPath): string {
         <button class="topbar-toggle" data-sidebar-toggle aria-label="Open menu">
             <i class="bi bi-list"></i>
         </button>
-        <span class="content-topbar-title"><?= e($pageTitle ?? 'CIRMS') ?></span>
+        <span class="content-topbar-title"><?= e($pageTitle ?? 'IRS') ?></span>
     </div>
     <?php endif; ?>
 

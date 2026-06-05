@@ -3,7 +3,16 @@
     "allow": [
       "Bash(New-Item -ItemType Directory -Force \"C:\\\\xampp\\\\htdocs\\\\cirmsv2\\\\public\\\\api\")",
       "Bash(Out-Null)",
-      "Bash(Write-Host \"done\")"
+      "Bash(Write-Host \"done\")",
+      "PowerShell(& \"C:\\\\xampp\\\\mysql\\\\bin\\\\mysql.exe\" -u root -e \"CREATE DATABASE IF NOT EXISTS cirms_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; SHOW DATABASES LIKE 'cirms_db';\" 2>&1)",
+      "PowerShell(& \"C:\\\\xampp\\\\mysql\\\\bin\\\\mysql.exe\" -u root cirms_db -e \"SOURCE C:/xampp/htdocs/cirmsv2/cirms_db.sql;\" 2>&1; Write-Host \"Import done\")",
+      "Bash(C:/xampp/mysql/bin/mysql.exe -u root cirms_db)",
+      "PowerShell(Get-Process *)",
+      "PowerShell(& \"C:\\\\xampp\\\\mysql\\\\bin\\\\mysql.exe\" -u root -e \"KILL 9; KILL 10;\" 2>&1; Write-Host \"Killed stuck connections\")",
+      "PowerShell(& \"C:\\\\xampp\\\\mysql\\\\bin\\\\mysql.exe\" -u root -e \"DROP DATABASE IF EXISTS cirms_db; CREATE DATABASE cirms_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;\" 2>&1; Write-Host \"Database recreated\")",
+      "Read(//c/xampp/php/logs/**)",
+      "Read(//c/xampp/apache/logs/**)",
+      "Bash(dir C:\\\\xampp\\\\htdocs\\\\cirmsv2\\\\public\\\\js *)"
     ]
   }
 }

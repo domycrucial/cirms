@@ -25,7 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             require_once __DIR__ . '/../../modules/notifications/mailer.php';
             $body = "
-                <p>This is a test message from CIRMS System Settings.</p>
+                <p>This is a test message from IRS System Settings.</p>
                 <table class='info-table'>
                     <tr><td>Sent At:</td><td>" . date('d M Y, H:i:s') . "</td></tr>
                     <tr><td>SMTP Host:</td><td>" . htmlspecialchars(SMTP_HOST) . ":" . SMTP_PORT . "</td></tr>
@@ -33,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </table>
                 <p>If you received this, your email configuration is working correctly.</p>
             ";
-            $ok = send_email($to, 'IT Security Team', '[CIRMS] SMTP Test — Configuration Verified', $body);
+            $ok = send_email($to, 'IT Security Team', '[IRS] SMTP Test — Configuration Verified', $body);
             if ($ok) {
                 audit_log('settings.smtp_test');
                 flash('success', 'Test email sent successfully to ' . $to . '. Check your inbox.');
@@ -386,7 +386,7 @@ include __DIR__ . '/../../includes/header.php';
                     <div class="col-5">
                         <label class="form-label">From Name</label>
                         <input type="text" name="smtp_from_name" class="form-control"
-                               value="<?= e($rows['smtp_from_name'] ?? 'CIRMS Notifications') ?>">
+                               value="<?= e($rows['smtp_from_name'] ?? 'IRS Notifications') ?>">
                     </div>
                 </div>
 
@@ -661,7 +661,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 ['PHP Version', $phpVersion, $phpOk, $phpOk ? 'PHP 8.0+ — supported' : 'PHP 7.x — upgrade recommended'],
                 ['Database',    'MariaDB / MySQL', $dbOk, 'Connected successfully'],
                 ['PHPMailer',   $phpMailerOk ? 'Installed' : 'Not installed', $phpMailerOk, $phpMailerOk ? 'vendor/autoload.php found' : 'Run: composer require phpmailer/phpmailer'],
-                ['App Version', APP_VERSION,  true,  'CIRMS v' . APP_VERSION],
+                ['App Version', APP_VERSION,  true,  'IRS v' . APP_VERSION],
                 ['Environment', APP_ENV,      APP_ENV !== 'development', APP_ENV === 'production' ? 'Production mode' : 'Switch to production before going live'],
                 ['Timezone',    TIMEZONE,     true,  date('d M Y, H:i:s')],
             ];

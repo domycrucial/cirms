@@ -111,7 +111,7 @@ if ($step === '' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             $safeName = htmlspecialchars($user['full_name'], ENT_QUOTES, 'UTF-8');
             $body = "
                 <p>Dear {$safeName},</p>
-                <p>We received a request to reset your CIRMS password. Click the button below to set a new password.
+                <p>We received a request to reset your IRS portal password. Click the button below to set a new password.
                    This link is valid for <strong>60 minutes</strong>.</p>
                 <a href='" . htmlspecialchars($resetUrl, ENT_QUOTES) . "' class='btn'>&#128274; Reset My Password &rarr;</a>
                 <hr class='divider'>
@@ -119,7 +119,7 @@ if ($step === '' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                     If you did not request this, you can safely ignore this email — your password will not change.
                 </p>
             ";
-            send_email($email, $user['full_name'], '[CIRMS] Password Reset Request', $body);
+            send_email($email, $user['full_name'], '[IRS] Password Reset Request', $body);
             audit_log('auth.password_reset_requested', 'user', (int)$user['id']);
         }
     }
@@ -146,8 +146,8 @@ if ($step === 'reset' && $token && empty($_POST)) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" href="<?= APP_URL ?>/public/assets/images/cirms.png">
-    <title>Forgot Password – CIRMS</title>
+    <link rel="icon" href="<?= APP_URL ?>/public/assets/images/iaa.png">
+    <title>Forgot Password – IRS</title>
     <?php require __DIR__ . '/../../includes/head_assets.php'; ?>
     <style>
         html, body { margin:0; padding:0; background:#060f1a; overflow-x:hidden; }
@@ -175,11 +175,11 @@ if ($step === 'reset' && $token && empty($_POST)) {
 
         <div class="auth-logo">
             <div class="auth-logo-icon">
-                <img src="<?= APP_URL ?>/public/assets/images/cirms_logo.png"
-                     style="width:100%;height:100%;object-fit:cover;border-radius:10px;" alt="CIRMS">
+                <img src="<?= APP_URL ?>/public/assets/images/iaa.png"
+                     style="width:100%;height:100%;object-fit:contain;border-radius:4px;" alt="IAA">
             </div>
             <div>
-                <div class="auth-logo-text">CIRMS</div>
+                <div class="auth-logo-text">IRS</div>
                 <span class="auth-logo-sub">Password Recovery</span>
             </div>
         </div>
@@ -207,8 +207,9 @@ if ($step === 'reset' && $token && empty($_POST)) {
                 <label class="form-label">Registered Email</label>
                 <div class="input-group">
                     <span class="input-group-text bg-light"><i class="bi bi-envelope"></i></span>
-                    <input type="email" name="email" class="form-control"
+                    <input type="email" name="email" id="emailField" class="form-control"
                            placeholder="you@university.ac.tz" required autofocus
+                           pattern="[a-zA-Z0-9@.]+"
                            value="<?= e($_POST['email'] ?? '') ?>">
                 </div>
             </div>
@@ -281,6 +282,12 @@ if ($step === 'reset' && $token && empty($_POST)) {
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 (function () {
+    /* Email field: allow only letters, numbers and the @ and . characters */
+    var emailField = document.getElementById('emailField');
+    emailField && emailField.addEventListener('input', function () {
+        this.value = this.value.replace(/[^a-zA-Z0-9@.]/g, '');
+    });
+
     /* Spinner on email form */
     var ff = document.getElementById('forgotForm');
     ff && ff.addEventListener('submit', function () {

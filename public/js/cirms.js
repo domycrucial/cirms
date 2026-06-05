@@ -74,11 +74,11 @@ document.addEventListener('DOMContentLoaded', () => {
         let valid = true;
         const errors = [];
 
-        // Description minimum length
+        // Description required (no minimum-length limitation any more)
         const desc = document.getElementById('description');
-        if (desc && desc.value.trim().length < 50) {
+        if (desc && desc.value.trim() === '') {
             valid = false;
-            errors.push('Description must be at least 50 characters.');
+            errors.push('Description is required.');
             desc.classList.add('is-invalid');
         } else if (desc) {
             desc.classList.remove('is-invalid');
@@ -132,16 +132,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Live character counter for description
-    const desc = document.getElementById('description');
-    const counter = document.getElementById('descCounter');
-    if (desc && counter) {
-        desc.addEventListener('input', () => {
-            const len = desc.value.trim().length;
-            counter.textContent = `${len} characters (minimum 50)`;
-            counter.style.color = len >= 50 ? '#16a34a' : '#ef4444';
-        });
-    }
+    // Note: the description live counter and special-character filtering are
+    // handled inline in report.php (no minimum-length limitation here).
 })();
 
 // ── Confirm delete / status change dialogs ───────────────────

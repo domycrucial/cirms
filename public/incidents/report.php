@@ -30,6 +30,117 @@ require_login(); // any authenticated user (student or staff) can report
 
 $pdo = db();
 
+// ── ICT services available at the institute (categorised) ─────
+// These populate the "ICT Service" dropdown that replaces the old
+// free-text Incident Title field. Services are grouped into categories
+// (rendered as <optgroup>s). The submitted title MUST be one of these
+// exact values (validated server-side below).
+$ictServiceGroups = [
+    'Academic Systems' => [
+        'ISMS (Student Management System)',
+        'eLearning Platform (Moodle)',
+        'Online Examination System',
+        'Student Portal',
+        'Library Information System',
+    ],
+    'Network & Connectivity' => [
+        'Campus Wi-Fi / Network',
+        'VPN / Remote Access',
+    ],
+    'Communication & Web' => [
+        'Email Service',
+        'Institute Website',
+    ],
+    'Administration & Finance' => [
+        'Fee Payment / Financial System',
+        'Staff Portal',
+    ],
+];
+// Flat list of every service — used for server-side validation.
+$ictServices = array_merge(...array_values($ictServiceGroups));
+
+// Options for the "Affected System / Service" dropdown — the same ICT
+// services (grouped) plus an "Other / Not listed" catch-all.
+$affectedOptions = array_merge($ictServices, ['Other / Not listed']);
+
+// ── Service → relevant incident types ─────────────────────────
+// Drives the cascading Category dropdown: when a user picks an ICT
+// service, only the incident types related to that service (matched by
+// name) stay visible. Names MUST match the rows seeded in the categories
+// table (see database/migrate_incident_types.php).
+$serviceCategoryMap = [
+    'ISMS (Student Management System)' => [
+        'Unable to log in to ISMS',
+        'ISMS overloading',
+        'ISMS portal slow loading',
+        'Result problem',
+        'Timetable not visible',
+        'Wrong programme details',
+        'Student account not activated',
+        'Enrolled in wrong course',
+        'Account locked',
+        'Password recovering',
+    ],
+    'eLearning Platform (Moodle)' => [
+        'Unable to log in to eLearning',
+        'eLearning portal inaccessible',
+        'Moodle delaying',
+        'Quiz not loading',
+        'Assignment upload failure',
+        'File upload failing',
+        'File format rejected',
+        'Missing joining group link',
+        'Unable to access course material',
+        'Mobile upload failure',
+        'Account locked',
+        'Password recovering',
+    ],
+    'Online Examination System' => [
+        'Examination ticket not appearing',
+        'Quiz not loading',
+        '500 Internal Server Error',
+    ],
+    'Student Portal' => [
+        'Poor interface',
+        'Poor responsiveness',
+        'Timetable not visible',
+        'Result problem',
+        'Wrong programme details',
+    ],
+    'Library Information System' => [
+        'Poor interface',
+        '500 Internal Server Error',
+        'Account locked',
+    ],
+    'Campus Wi-Fi / Network' => [
+        'Wi-Fi problem',
+        'Wi-Fi slow speed',
+        'Internet connection problem',
+    ],
+    'VPN / Remote Access' => [
+        'Internet connection problem',
+        'Account locked',
+    ],
+    'Email Service' => [
+        'Password reset email not received',
+        'Password recovering',
+    ],
+    'Institute Website' => [
+        '500 Internal Server Error',
+        'Poor interface',
+        'Poor responsiveness',
+    ],
+    'Fee Payment / Financial System' => [
+        'Payment not appearing',
+    ],
+    'Staff Portal' => [
+        'Account locked',
+        'Poor interface',
+        '500 Internal Server Error',
+        'Password recovering',
+    ],
+];
+
 // Fetch all active incident categories for the dropdown.
 // PHP-side filter avoids needing is_active column in all DB setups.
 $__cats     = $pdo->query('SELECT * FROM categories ORDER BY name')->fetchAll();
@@ -59,8 +170,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $validSeverities = ['Low', 'Medium', 'High', 'Critical'];
     $validCatIds     = array_column($categories, 'id');
 
-    if (!$title || strlen($title) < 5)
-        $errors[] = 'Title is required (minimum 5 characters).';
+    // Title is now a dropdown of ICT services — no length limitation.
+    // It only has to be one of the predefined services in $ictServices.
+    if (!in_array($title, $ictServices, true))
+        $errors[] = 'Please select a valid ICT service.';
 
     if (!in_array($cat_id, $validCatIds, true))
         $errors[] = 'Please select a valid incident category.';
@@ -68,8 +181,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!in_array($severity, $validSeverities, true))
         $errors[] = 'Please select a valid severity level.';
 
-    if (strlen($description) < 50)
-        $errors[] = 'Description must be at least 50 characters.';
+    // Affected system is optional, but if chosen it must be one of the
+    // predefined dropdown options.
+    if ($affected !== '' && !in_array($affected, $affectedOptions, true))
+        $errors[] = 'Please select a valid affected system.';
+
+    // Description has no minimum-length limitation, but special characters
+    // are not allowed — only letters, numbers, spaces and basic punctuation
+    // (. , ' - ? !). This keeps the description to plain readable text.
+    if ($description === '')
+        $errors[] = 'Description is required.';
+    elseif (!preg_match("/^[a-zA-Z0-9\s.,'\-?!]+$/u", $description))
+        $errors[] = 'Description may contain only letters, numbers, spaces and basic punctuation (. , \' - ? !) — no special characters.';
 
     if (!$consent)
         $errors[] = 'You must acknowledge the data processing consent.';
@@ -199,7 +322,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Sends the reporter a receipt showing:
         //   — their reference number (for tracking and follow-up)
         //   — expected response time based on severity SLA
-        //   — a button to track their report in CIRMS
+        //   — a button to track their report in the IRS portal
         $emailToReporter = notify_submission_confirmation(
             $_SESSION['user_email'], // reporter's own email address
             $_SESSION['user_name'],  // reporter's full name for salutation
@@ -225,7 +348,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Both emails failed — incident is still saved
             flash('success',
                 "Incident {$ref} submitted. The IT team will see your " .
-                "report in the CIRMS dashboard."
+                "report in the IRS portal."
             );
         }
 
@@ -271,23 +394,37 @@ include __DIR__ . '/../../includes/header.php';
     <!-- CSRF hidden token — required on every POST form -->
     <?= csrf_field() ?>
 
-    <!-- Incident title -->
+    <!-- Incident title — now a dropdown of the institute's ICT services.
+         The list comes from $ictServices (defined at the top of this file).
+         There is no length limitation: the value is one of a fixed set. -->
     <div class="mb-3">
-        <label for="title" class="form-label">Incident Title *</label>
-        <input type="text" id="title" name="title" class="form-control"
-               placeholder="Brief summary — e.g. Phishing email from fake IT department"
-               value="<?= e($_POST['title'] ?? '') ?>" required>
-        <div class="form-hint">Minimum 5 characters. Be specific and clear.</div>
+        <label for="title" class="form-label">ICT Service *</label>
+        <select id="title" name="title" class="form-select" required>
+            <option value="">— Select the ICT service —</option>
+            <?php foreach ($ictServiceGroups as $groupLabel => $services): ?>
+            <optgroup label="<?= e($groupLabel) ?>">
+                <?php foreach ($services as $service): ?>
+                <option value="<?= e($service) ?>"
+                    <?= (($_POST['title'] ?? '') === $service) ? 'selected' : '' ?>>
+                    <?= e($service) ?>
+                </option>
+                <?php endforeach; ?>
+            </optgroup>
+            <?php endforeach; ?>
+        </select>
+        <div class="form-hint">Choose the ICT service the incident relates to.</div>
     </div>
 
     <div class="row g-3 mb-3">
         <!-- Category — loaded from categories table -->
         <div class="col-md-6">
             <label for="category_id" class="form-label">Incident Category *</label>
+            <!-- Categories carry data-name so the cascade JS can match them to
+                 the selected ICT service (see $serviceCategoryMap below). -->
             <select id="category_id" name="category_id" class="form-select" required>
-                <option value="">— Select category —</option>
+                <option value="">— Select an ICT service first —</option>
                 <?php foreach ($categories as $cat): ?>
-                <option value="<?= $cat['id'] ?>"
+                <option value="<?= $cat['id'] ?>" data-name="<?= e($cat['name']) ?>"
                     <?= (($_POST['category_id'] ?? '') == $cat['id']) ? 'selected' : '' ?>>
                     <?= e($cat['name']) ?>
                 </option>
@@ -302,19 +439,19 @@ include __DIR__ . '/../../includes/header.php';
                 <option value="">— Select severity —</option>
                 <option value="Low"
                     <?= (($_POST['severity'] ?? '') === 'Low')      ? 'selected' : '' ?>>
-                    🟢 Low — Minor, no immediate risk
+                    Low — Minor, no immediate risk
                 </option>
                 <option value="Medium"
                     <?= (($_POST['severity'] ?? '') === 'Medium')   ? 'selected' : '' ?>>
-                    🟡 Medium — Moderate concern
+                    Medium — Moderate concern
                 </option>
                 <option value="High"
                     <?= (($_POST['severity'] ?? '') === 'High')     ? 'selected' : '' ?>>
-                    🟠 High — Significant threat
+                    High — Significant threat
                 </option>
                 <option value="Critical"
                     <?= (($_POST['severity'] ?? '') === 'Critical') ? 'selected' : '' ?>>
-                    🔴 Critical — Immediate danger
+                    Critical — Immediate danger
                 </option>
             </select>
             <div class="form-hint">If unsure, select Medium — the IT team will reassess.</div>
@@ -322,12 +459,27 @@ include __DIR__ . '/../../includes/header.php';
     </div>
 
     <div class="row g-3 mb-3">
-        <!-- Affected system -->
+        <!-- Affected system — dropdown of the same ICT services, plus an
+             "Other / Not listed" option for systems outside the list. -->
         <div class="col-md-6">
             <label for="affected_system" class="form-label">Affected System / Service</label>
-            <input type="text" id="affected_system" name="affected_system" class="form-control"
-                   placeholder="e.g. Student portal, Campus Wi-Fi, Email system"
-                   value="<?= e($_POST['affected_system'] ?? '') ?>">
+            <select id="affected_system" name="affected_system" class="form-select">
+                <option value="">— Select affected system —</option>
+                <?php foreach ($ictServiceGroups as $groupLabel => $services): ?>
+                <optgroup label="<?= e($groupLabel) ?>">
+                    <?php foreach ($services as $opt): ?>
+                    <option value="<?= e($opt) ?>"
+                        <?= (($_POST['affected_system'] ?? '') === $opt) ? 'selected' : '' ?>>
+                        <?= e($opt) ?>
+                    </option>
+                    <?php endforeach; ?>
+                </optgroup>
+                <?php endforeach; ?>
+                <option value="Other / Not listed"
+                    <?= (($_POST['affected_system'] ?? '') === 'Other / Not listed') ? 'selected' : '' ?>>
+                    Other / Not listed
+                </option>
+            </select>
         </div>
 
         <!-- When the incident happened — defaults to now -->
@@ -339,7 +491,8 @@ include __DIR__ . '/../../includes/header.php';
         </div>
     </div>
 
-    <!-- Detailed description — minimum 50 chars enforced server-side -->
+    <!-- Detailed description — no length limitation. Only letters, numbers,
+         spaces and basic punctuation are allowed (special characters blocked). -->
     <div class="mb-3">
         <label for="description" class="form-label">Detailed Description *</label>
         <textarea id="description" name="description" class="form-control description-field"
@@ -347,7 +500,7 @@ include __DIR__ . '/../../includes/header.php';
                   placeholder="Describe what happened, when you noticed it, what actions you took, and any other details that will help the IT team investigate."
         ><?= e($_POST['description'] ?? '') ?></textarea>
         <div class="d-flex justify-content-between align-items-center mt-1">
-            <div class="form-hint mb-0" id="descCounter">Minimum 50 characters required.</div>
+            <div class="form-hint mb-0" id="descCounter">Letters and basic punctuation only — no special characters.</div>
             <div class="form-hint mb-0" id="descCharCount" style="font-variant-numeric:tabular-nums;"></div>
         </div>
     </div>
@@ -417,17 +570,63 @@ include __DIR__ . '/../../includes/header.php';
 
 <script>
 (function () {
-    /* ── Description char counter (supplements cirms.js) ─── */
+    /* ── Cascading Category dropdown ──────────────────────────────
+       When the user picks an ICT Service (title), filter the Category
+       dropdown to only the categories related to that service. The
+       service→category map mirrors $serviceCategoryMap in PHP. */
+    var SVC_CAT = <?= json_encode($serviceCategoryMap, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
+    var titleSel = document.getElementById('title');
+    var catSel   = document.getElementById('category_id');
+
+    if (titleSel && catSel) {
+        // Snapshot every real category option once (skip the placeholder)
+        var allCatOptions = Array.prototype.slice
+            .call(catSel.options)
+            .filter(function (o) { return o.value !== ''; });
+        var placeholder = catSel.options[0];
+
+        function refreshCategories() {
+            var service = titleSel.value;
+            var allowed = SVC_CAT[service] || [];
+            var keepVal = catSel.value;
+
+            // Rebuild: placeholder first, then only matching categories
+            catSel.innerHTML = '';
+            placeholder.textContent = service
+                ? '— Select category —'
+                : '— Select an ICT service first —';
+            catSel.appendChild(placeholder);
+
+            allCatOptions.forEach(function (opt) {
+                if (allowed.indexOf(opt.getAttribute('data-name')) !== -1) {
+                    catSel.appendChild(opt);
+                }
+            });
+
+            // Keep the previous choice only if it is still available
+            catSel.value = keepVal;
+            if (catSel.value !== keepVal) catSel.value = '';
+        }
+
+        titleSel.addEventListener('change', refreshCategories);
+        refreshCategories(); // run on load (handles re-render after errors)
+    }
+
+    /* ── Description: block special characters + plain char count ──
+       Only letters, numbers, spaces and basic punctuation (. , ' - ? !)
+       are allowed. Anything else is stripped as the user types. There is
+       no minimum-length limitation. */
     var desc    = document.getElementById('description');
     var counter = document.getElementById('descCharCount');
-    if (desc && counter) {
-        function updateCharCount() {
-            var n = desc.value.length;
-            counter.textContent = n + ' chars';
-            counter.style.color = n >= 50 ? '#16a34a' : '#ef4444';
-        }
-        desc.addEventListener('input', updateCharCount);
-        updateCharCount();
+    var DESC_ALLOWED = /[^a-zA-Z0-9\s.,'\-?!]/g;
+    if (desc) {
+        desc.addEventListener('input', function () {
+            // Strip any disallowed special character immediately
+            var cleaned = this.value.replace(DESC_ALLOWED, '');
+            if (cleaned !== this.value) this.value = cleaned;
+            if (counter) counter.textContent = this.value.length + ' chars';
+        });
+        if (counter) counter.textContent = desc.value.length + ' chars';
     }
 
     /* ── Submit button spinner ───────────────────────────── */
@@ -435,8 +634,6 @@ include __DIR__ . '/../../includes/header.php';
     var btn  = document.getElementById('submitReportBtn');
     if (form && btn) {
         form.addEventListener('submit', function () {
-            var desc = document.getElementById('description');
-            if (desc && desc.value.trim().length < 50) return; // let cirms.js block it
             btn.disabled = true;
             btn.innerHTML =
                 '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>'

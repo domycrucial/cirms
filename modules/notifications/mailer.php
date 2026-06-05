@@ -38,7 +38,7 @@ require_once __DIR__ . '/../../config/database.php';
 // ============================================================
 //  FUNCTION 1 — send_email()
 //
-//  The single delivery point for ALL emails in CIRMS.
+//  The single delivery point for ALL emails in the IRS portal.
 //  Every notify_* function calls this one function.
 //  Uses PHPMailer + Gmail SMTP when vendor/autoload.php exists.
 //  Falls back to PHP's built-in mail() on live servers only.
@@ -140,13 +140,13 @@ function send_email(string $to, string $toName, string $subject, string $bodyHtm
 
             // Log success to PHP error log for audit trail
             // View at: C:\xampp\php\logs\php_error_log
-            error_log("CIRMS MAIL SENT → {$to} | {$subject}");
+            error_log("IRS MAIL SENT → {$to} | {$subject}");
 
             return true; // email delivered
 
         } catch (Exception $e) {
             // Log the full PHPMailer error for debugging
-            error_log("CIRMS MAIL ERROR: " . $e->getMessage() . " | To: {$to} | Subject: {$subject}");
+            error_log("IRS MAIL ERROR: " . $e->getMessage() . " | To: {$to} | Subject: {$subject}");
 
             return false; // email failed — caller decides how to handle
         }
@@ -260,7 +260,7 @@ function email_wrap_html(string $body, string $title): string
 
     <!-- ── Header ── -->
     <div class="hdr">
-      <p class="hdr-title">&#128737; CIRMS &mdash; Campus Cyber Incident System</p>
+      <p class="hdr-title">&#127979; IRS &mdash; Institute of Accountancy Arusha Reporting System</p>
       <p class="hdr-sub">{$safeTitle}</p>
     </div>
 
@@ -269,10 +269,10 @@ function email_wrap_html(string $body, string $title): string
 
     <!-- ── Footer ── -->
     <div class="ftr">
-      Automated message from CIRMS. Do not reply to this email.<br>
-      IT Security: <a href="mailto:{$itEmail}">{$itEmail}</a> &nbsp;|&nbsp;
-      <a href="{$appUrl}">Open CIRMS</a><br>
-      &copy; {$year} CIRMS &mdash; Campus Cyber Incident Reporting &amp; Management System
+      Automated message from IRS. Do not reply to this email.<br>
+      ICT Support: <a href="mailto:{$itEmail}">{$itEmail}</a> &nbsp;|&nbsp;
+      <a href="{$appUrl}">Open IRS Portal</a><br>
+      &copy; {$year} IRS &mdash; Institute of Accountancy Arusha Reporting System
     </div>
 
   </div>
@@ -363,7 +363,7 @@ function notify_new_incident(int $incidentId, string $reporterName, string $repo
 
     // Build the inner HTML body of the email
     $body = "
-        <p>A new cybersecurity incident has been submitted through CIRMS
+        <p>A new ICT incident has been submitted through the IRS portal
            and requires your immediate attention.</p>
 
         <table class='info-table'>
@@ -377,20 +377,20 @@ function notify_new_incident(int $incidentId, string $reporterName, string $repo
             <tr><td>Submitted At:</td> <td>{$time}</td></tr>
         </table>
 
-        <p>Log in to CIRMS to acknowledge this incident, assign it to an officer,
+        <p>Log in to IRS to acknowledge this incident, assign it to an officer,
            and begin the investigation. The SLA clock is now running.</p>
 
-        <a href='{$url}' class='btn'>&#128274; Open Incident in CIRMS &rarr;</a>
+        <a href='{$url}' class='btn'>&#128274; Open Incident in IRS &rarr;</a>
 
         <hr class='divider'>
         <p style='color:#64748b;font-size:.82rem;'>
             This email was triggered automatically when the incident was submitted.
-            All investigation actions must be recorded in CIRMS.
+            All actions must be recorded in the IRS portal.
         </p>
     ";
 
     // Subject line includes severity so officer can prioritise from inbox
-    $subject = "[CIRMS][{$sev}] New Incident: {$ref}";
+    $subject = "[IRS][{$sev}] New Incident: {$ref}";
 
     // Send directly to the IT security team email defined in config.php
     return send_email(NOTIFY_IT_EMAIL, 'IT Security Team', $subject, $body);
@@ -456,8 +456,8 @@ function notify_submission_confirmation(
     $body = "
         <p>Dear {$name},</p>
 
-        <p>Your cybersecurity incident report has been successfully received by CIRMS.
-           The IT Security team has been alerted and will respond as soon as possible.</p>
+        <p>Your ICT incident report has been successfully received by the IRS portal.
+           The IAA ICT support team has been alerted and will respond as soon as possible.</p>
 
         <table class='info-table'>
             <tr><td>Reference:</td>          <td><strong>{$ref}</strong></td></tr>
@@ -473,7 +473,7 @@ function notify_submission_confirmation(
         </div>
 
         <p>You will receive email updates whenever the status of your report changes.
-           You can also check the current status at any time by logging in to CIRMS.</p>
+           You can also check the current status at any time by logging into the IRS portal.</p>
 
         <a href='{$url}' class='btn-green'>&#128269; Track Your Report &rarr;</a>
 
@@ -484,7 +484,7 @@ function notify_submission_confirmation(
         </p>
     ";
 
-    return send_email($reporterEmail, $reporterName, "[CIRMS] Report Received: {$ref}", $body);
+    return send_email($reporterEmail, $reporterName, "[IRS] Report Received: {$ref}", $body);
 }
 
 
@@ -544,26 +544,26 @@ function notify_status_change(
              has been assigned and investigation will begin shortly. No action is
              required from you at this time.',
         'In Progress'  =>
-            'The IT Security team is actively investigating your incident. You may
-             receive requests for additional information. Check CIRMS for any
-             notes posted by the officer.',
+            'The IAA ICT team is actively investigating your incident. You may
+             receive requests for additional information. Check the IRS portal for any
+             notes posted by the support officer.',
         'Resolved'     =>
-            'The IT Security team has resolved your incident. Please log in to CIRMS
+            'The IAA ICT team has resolved your incident. Please log in to the IRS portal
              to review the resolution notes. If the problem persists, please reply
-             through the CIRMS portal or submit a new incident report.',
+             through the IRS portal or submit a new incident report.',
         'Closed'       =>
             'This incident has been officially closed and recorded in the system.
              If the issue reoccurs or was not fully resolved, please submit a new
-             incident report through CIRMS.',
+             incident report through the IRS portal.',
         default        =>
-            'Your incident report has been updated. Log in to CIRMS for full
-             details and any notes posted by the IT team.',
+            'Your incident report has been updated. Log in to the IRS portal for full
+             details and any notes posted by the ICT support team.',
     };
 
     $body = "
         <p>Dear {$name},</p>
 
-        <p>Your cybersecurity incident report has been updated by the IT Security team.</p>
+        <p>Your ICT incident report has been updated by the IAA ICT support team.</p>
 
         <table class='info-table'>
             <tr><td>Reference:</td>   <td><strong>{$ref}</strong></td></tr>
@@ -579,14 +579,14 @@ function notify_status_change(
         <hr class='divider'>
         <p style='color:#64748b;font-size:.82rem;'>
             Do not reply to this email. All communication about your incident
-            must go through the CIRMS portal to maintain a complete audit trail.
+            must go through the IRS portal to maintain a complete audit trail.
         </p>
     ";
 
     return send_email(
         $reporterEmail,
         $reporterName,
-        "[CIRMS] Incident {$ref} — Status: {$newStatus}",
+        "[IRS] Incident {$ref} — Status: {$newStatus}",
         $body
     );
 }
@@ -644,7 +644,7 @@ function notify_officer_assigned(
         <p>Dear {$name},</p>
 
         <p>You have been assigned to investigate and resolve the following
-           cybersecurity incident in CIRMS. Please acknowledge it as soon as possible.</p>
+           ICT incident in the IRS portal. Please acknowledge it as soon as possible.</p>
 
         <table class='info-table'>
             <tr><td>Reference:</td>    <td><strong>{$ref}</strong></td></tr>
@@ -664,7 +664,7 @@ function notify_officer_assigned(
         <p>Open the incident to read the full description, any evidence attachments
            provided by the reporter, and their contact details.</p>
 
-        <a href='{$url}' class='btn'>&#128274; Open Incident in CIRMS &rarr;</a>
+        <a href='{$url}' class='btn'>&#128274; Open Incident in the IRS portal &rarr;</a>
 
         <hr class='divider'>
         <p style='color:#64748b;font-size:.82rem;'>
@@ -675,7 +675,7 @@ function notify_officer_assigned(
     return send_email(
         $officerEmail,
         $officerName,
-        "[CIRMS] Assigned to You: {$ref} — {$sev}",
+        "[IRS] Assigned to You: {$ref} — {$sev}",
         $body
     );
 }
@@ -692,8 +692,8 @@ function notify_officer_assigned(
 //  do NOT trigger this function. Only public notes do.
 //
 //  The note body itself is NOT included in the email — the reporter
-//  must log in to CIRMS to read it. This keeps investigation
-//  details off email and ensures all communication stays in CIRMS.
+//  must log in to the IRS portal to read it. This keeps investigation
+//  details off email and ensures all communication stays in the IRS portal.
 //
 //  PARAMETERS:
 //    $reporterEmail — reporter's email (from DB)
@@ -719,7 +719,7 @@ function notify_note_added(
         <p>The IT Security team has posted a new update on your incident
            <strong>{$ref}</strong>.</p>
 
-        <p>Log in to CIRMS to read the full message from the officer. If you have
+        <p>Log in to the IRS portal to read the full message from the officer. If you have
            additional information that could help the investigation, you can add
            it through the portal.</p>
 
@@ -740,7 +740,7 @@ function notify_note_added(
     return send_email(
         $reporterEmail,
         $reporterName,
-        "[CIRMS] New Update on Your Incident {$ref}",
+        "[IRS] New Update on Your Incident {$ref}",
         $body
     );
 }
@@ -808,9 +808,9 @@ function notify_account_created(
             Go to your profile settings inside CIRMS to update it.
         </div>
 
-        <p>Click the button below to log in to CIRMS for the first time.</p>
+        <p>Click the button below to log in to the IRS portal for the first time.</p>
 
-        <a href='{$loginUrl}' class='btn-green'>&#128274; Log In to CIRMS &rarr;</a>
+        <a href='{$loginUrl}' class='btn-green'>&#128274; Log In to the IRS portal &rarr;</a>
 
         <hr class='divider'>
         <p style='color:#64748b;font-size:.82rem;'>
@@ -819,7 +819,7 @@ function notify_account_created(
         </p>
     ";
 
-    return send_email($userEmail, $userName, "[CIRMS] Your Account Has Been Created", $body);
+    return send_email($userEmail, $userName, "[IRS] Your Account Has Been Created", $body);
 }
 
 
@@ -857,7 +857,7 @@ function notify_account_activated(string $userEmail, string $userName): bool
             <tr><td>Reactivated At:</td>  <td>" . date('d M Y, H:i') . "</td></tr>
         </table>
 
-        <a href='{$loginUrl}' class='btn-green'>&#128274; Log In to CIRMS &rarr;</a>
+        <a href='{$loginUrl}' class='btn-green'>&#128274; Log In to the IRS portal &rarr;</a>
 
         <hr class='divider'>
         <p style='color:#64748b;font-size:.82rem;'>
@@ -866,7 +866,7 @@ function notify_account_activated(string $userEmail, string $userName): bool
         </p>
     ";
 
-    return send_email($userEmail, $userName, "[CIRMS] Your Account Has Been Reactivated", $body);
+    return send_email($userEmail, $userName, "[IRS] Your Account Has Been Reactivated", $body);
 }
 
 
@@ -879,7 +879,7 @@ function notify_account_activated(string $userEmail, string $userName): bool
 //
 //  Only fires when the role actually changes (old != new).
 //  Tells the user what their new role is and what it allows them
-//  to do, so they understand their new access level in CIRMS.
+//  to do, so they understand their new access level in the IRS portal.
 //
 //  PARAMETERS:
 //    $userEmail — user's email address
@@ -920,7 +920,7 @@ function notify_role_changed(
             'You can submit cybersecurity incident reports through CIRMS and track
              the status of your own submitted reports.',
         default    =>
-            'Your access level in CIRMS has been updated.',
+            'Your access level in the IRS portal has been updated.',
     };
 
     $body = "
@@ -936,7 +936,7 @@ function notify_role_changed(
 
         <p>{$roleDesc}</p>
 
-        <p>Please log out and log back in to CIRMS for your new permissions to take
+        <p>Please log out and log back in to the IRS portal for your new permissions to take
            full effect.</p>
 
         <a href='{$loginUrl}' class='btn'>Log In with Your New Role &rarr;</a>
@@ -950,7 +950,7 @@ function notify_role_changed(
     return send_email(
         $userEmail,
         $userName,
-        "[CIRMS] Your Account Role Has Changed to {$new}",
+        "[IRS] Your Account Role Has Changed to {$new}",
         $body
     );
 }
@@ -1000,7 +1000,7 @@ function notify_lockout_cleared(string $userEmail, string $userName): bool
     return send_email(
         $userEmail,
         $userName,
-        '[CIRMS] Your Account Lockout Has Been Cleared',
+        '[IRS] Your Account Lockout Has Been Cleared',
         $body
     );
 }

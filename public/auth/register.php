@@ -36,16 +36,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // ── Validate Email ────────────────────────────────────────
+    // Only letters, digits and the two special characters @ and . are
+    // permitted (e.g. a Gmail address). Any other special character is rejected.
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $errors[] = 'Please enter a valid email address.';
+    } elseif (!preg_match('/^[a-zA-Z0-9@.]+$/', $email)) {
+        $errors[] = 'Email may contain only letters, numbers, @ and . — no other special characters.';
     } elseif (strlen($email) > 200) {
         $errors[] = 'Email address is too long.';
     }
 
     // ── Validate Department ────────────────────────────────────
+    // Department must contain only letters (and spaces) — no numbers or symbols.
     if ($department !== '') {
-        if (!preg_match("/^[a-zA-Z0-9\s\-&\/]+$/u", $department)) {
-            $errors[] = 'Department must contain only letters, numbers, spaces, hyphens, &, or /.';
+        if (!preg_match("/^[a-zA-Z\s]+$/u", $department)) {
+            $errors[] = 'Department must contain only letters and spaces.';
         } elseif (strlen($department) > 150) {
             $errors[] = 'Department must not exceed 150 characters.';
         }
@@ -111,8 +116,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" href="<?= APP_URL ?>/public/assets/images/cirms.png">
-    <title>Create Account – CIRMS</title>
+    <link rel="icon" href="<?= APP_URL ?>/public/assets/images/iaa.png">
+    <title>Create Account – IRS</title>
     <?php require __DIR__ . '/../../includes/head_assets.php'; ?>
     <style>
         html, body { margin:0; padding:0; background:#060f1a; overflow-x:hidden; }
@@ -151,11 +156,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <div class="auth-logo">
             <div class="auth-logo-icon">
-                <img src="<?= APP_URL ?>/public/assets/images/cirms_logo.png"
-                     style="width:100%;height:100%;object-fit:cover;border-radius:10px;" alt="CIRMS">
+                <img src="<?= APP_URL ?>/public/assets/images/iaa.png"
+                     style="width:100%;height:100%;object-fit:contain;border-radius:4px;" alt="IAA">
             </div>
             <div>
-                <div class="auth-logo-text">CIRMS</div>
+                <div class="auth-logo-text">IRS</div>
                 <span class="auth-logo-sub">Create Your Account</span>
             </div>
         </div>
@@ -187,10 +192,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <!-- Email -->
             <div class="mb-3">
                 <label class="form-label fw-semibold">Email Address <span class="text-danger">*</span></label>
-                <input type="email" name="email" class="form-control"
+                <input type="email" name="email" id="emailField" class="form-control"
                        value="<?= e($old['email'] ?? '') ?>"
                        placeholder="your.email@university.ac.tz" required maxlength="200"
-                       autocomplete="email">
+                       pattern="[a-zA-Z0-9@.]+" autocomplete="email">
+                <div class="field-hint">Only letters, numbers, @ and . are allowed.</div>
             </div>
 
             <div class="row g-3 mb-3">
@@ -199,8 +205,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <label class="form-label fw-semibold">Department</label>
                     <input type="text" name="department" id="deptField" class="form-control"
                            value="<?= e($old['department'] ?? '') ?>"
-                           placeholder="e.g. ICT, Finance" maxlength="150">
-                    <div class="field-hint">Letters, numbers, spaces, hyphens only.</div>
+                           placeholder="e.g. ICT, Finance" maxlength="150"
+                           pattern="[a-zA-Z\s]+">
+                    <div class="field-hint">Letters and spaces only.</div>
                 </div>
                 <!-- Phone -->
                 <div class="col-6">
@@ -336,20 +343,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     confirm && confirm.addEventListener('input', checkMatch);
     pwd     && pwd.addEventListener('input',     checkMatch);
 
-    /* ── Block special chars in name/department fields ───── */
-    var nameField = document.getElementById('fullName');
-    var deptField = document.getElementById('deptField');
+    /* ── Block special chars in name/department/email fields ─ */
+    var nameField  = document.getElementById('fullName');
+    var deptField  = document.getElementById('deptField');
     var phoneField = document.getElementById('phoneField');
+    var emailField = document.getElementById('emailField');
 
     nameField && nameField.addEventListener('input', function () {
         this.value = this.value.replace(/[^a-zA-Z\s'\-\.]/g, '');
     });
+    // Department: letters and spaces only — strip numbers and symbols
     deptField && deptField.addEventListener('input', function () {
-        this.value = this.value.replace(/[^a-zA-Z0-9\s\-&\/]/g, '');
+        this.value = this.value.replace(/[^a-zA-Z\s]/g, '');
     });
     phoneField && phoneField.addEventListener('input', function () {
         // Allow only +, digits
         this.value = this.value.replace(/[^\+\d]/g, '');
+    });
+    // Email: allow only letters, numbers and the @ and . special characters
+    emailField && emailField.addEventListener('input', function () {
+        this.value = this.value.replace(/[^a-zA-Z0-9@.]/g, '');
     });
 
     /* ── Submit spinner + overlay ───────────────────────── */
@@ -434,7 +447,7 @@ function notify_new_registration_alert(string $name, string $email, string $depa
         $usersUrl  = APP_URL . '/public/users/list.php';
 
         $body = "
-            <p>A new user has self-registered on CIRMS. No action is required unless you need
+            <p>A new user has self-registered on the IRS portal. No action is required unless you need
                to promote their role or verify their identity.</p>
             <table class='info-table'>
                 <tr><td>Name:</td>         <td><strong>{$safeName}</strong></td></tr>
@@ -450,7 +463,7 @@ function notify_new_registration_alert(string $name, string $email, string $depa
 
         send_email(
             NOTIFY_IT_EMAIL, 'IT Security Team',
-            '[CIRMS] New User Registration: ' . $safeName,
+            '[IRS] New User Registration: ' . $safeName,
             email_wrap_html($body, 'New User Self-Registered')
         );
     } catch (\Throwable $e) {

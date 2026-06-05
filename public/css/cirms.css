@@ -478,9 +478,15 @@ body.has-canvas .auth-wrapper {
 .cirms-footer {
   background: var(--navy);
   border-top: 1px solid var(--navy-soft);
-  color: var(--muted);
+  /* Light slate text so the footer words stay readable on the dark navy bar */
+  color: #cbd5e1;
   padding: .85rem 0;
   font-size: .8rem;
+}
+/* Override Bootstrap's dark .text-muted (#6c757d) used inside footer.php —
+   it was nearly invisible on the navy background. Lighten it so it displays. */
+.cirms-footer .text-muted {
+  color: #cbd5e1 !important;
 }
 
 /* ── Utility ─────────────────────────────────────────────── */

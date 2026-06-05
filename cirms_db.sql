@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: May 14, 2026 at 08:20 AM
+-- Generation Time: May 20, 2026 at 09:46 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -43,7 +43,8 @@ CREATE TABLE `attachments` (
 --
 
 INSERT INTO `attachments` (`id`, `incident_id`, `filename`, `original`, `mime_type`, `size_bytes`, `uploaded_by`, `uploaded_at`) VALUES
-(1, 4, '74238a3f3f1fc0676bcb4bb2.jpg', 'IMG-20260405-WA0070.jpg', 'image/jpeg', 26524, 4, '2026-05-13 16:06:44');
+(1, 4, '74238a3f3f1fc0676bcb4bb2.jpg', 'IMG-20260405-WA0070.jpg', 'image/jpeg', 26524, 4, '2026-05-13 16:06:44'),
+(2, 5, '1aabd1d4ed12f013cf1609df.jpeg', 'dsa.jpeg', 'image/jpeg', 39005, 8, '2026-05-18 18:11:07');
 
 -- --------------------------------------------------------
 
@@ -125,7 +126,77 @@ INSERT INTO `audit_log` (`id`, `user_id`, `action`, `target_type`, `target_id`, 
 (55, 2, 'analytics.export', NULL, NULL, '{\"from\":\"2026-01-01\",\"to\":\"2026-05-13\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-13 16:32:03'),
 (56, 2, 'settings.updated', NULL, NULL, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-13 16:34:33'),
 (57, 2, 'attachment.downloaded', 'attachment', 1, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-13 16:40:37'),
-(58, 2, 'auth.logout', 'user', 2, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-13 16:41:24');
+(58, 2, 'auth.logout', 'user', 2, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-13 16:41:24'),
+(59, 2, 'auth.login', 'user', 2, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-14 10:06:53'),
+(60, 2, 'auth.login', 'user', 2, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-16 11:23:32'),
+(61, 2, 'analytics.export', NULL, NULL, '{\"from\":\"2026-01-01\",\"to\":\"2026-05-16\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-16 11:29:13'),
+(62, 2, 'auth.logout', 'user', 2, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-16 11:36:30'),
+(63, 2, 'auth.login', 'user', 2, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-16 11:37:33'),
+(64, 2, 'attachment.downloaded', 'attachment', 1, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-16 11:56:38'),
+(65, 2, 'auth.login', 'user', 2, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-16 13:52:53'),
+(66, 2, 'settings.updated', NULL, NULL, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-16 14:22:54'),
+(67, 2, 'auth.login', 'user', 2, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-16 14:23:06'),
+(68, 2, 'auth.logout', 'user', 2, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-16 14:23:21'),
+(69, 2, 'auth.login', 'user', 2, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-18 18:07:45'),
+(70, 2, 'auth.logout', 'user', 2, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-18 18:07:54'),
+(71, NULL, 'auth.register', 'user', 8, '{\"email\":\"davsonmollel2@gmail.com\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-18 18:08:35'),
+(72, 8, 'auth.login', 'user', 8, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-18 18:09:30'),
+(73, 8, 'incident.submitted', 'incident', 5, '{\"ref\":\"INC-2026-0005\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-18 18:11:07'),
+(74, 8, 'auth.logout', 'user', 8, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-18 18:12:01'),
+(75, 2, 'auth.login', 'user', 2, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-18 18:12:35'),
+(76, 2, 'attachment.downloaded', 'attachment', 2, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-18 18:12:59'),
+(77, 2, 'incident.status_changed', 'incident', 5, '{\"from\":\"New\",\"to\":\"Acknowledged\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-18 18:13:29'),
+(78, 2, 'incident.status_changed', 'incident', 5, '{\"from\":\"Acknowledged\",\"to\":\"Acknowledged\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-18 18:14:23'),
+(79, 2, 'attachment.downloaded', 'attachment', 2, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-18 18:14:25'),
+(80, 2, 'auth.logout', 'user', 2, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-18 18:25:54'),
+(81, 2, 'auth.login', 'user', 2, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-18 21:28:57'),
+(82, 2, 'attachment.downloaded', 'attachment', 2, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-18 21:52:45'),
+(83, 2, 'auth.logout', 'user', 2, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-18 21:53:43'),
+(84, 2, 'auth.login', 'user', 2, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-18 21:53:58'),
+(85, 2, 'auth.logout', 'user', 2, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-18 21:54:03'),
+(86, 2, 'auth.login', 'user', 2, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-18 22:15:18'),
+(87, 2, 'auth.logout', 'user', 2, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-18 22:15:35'),
+(88, 7, 'auth.login', 'user', 7, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-18 22:15:42'),
+(89, 7, 'attachment.downloaded', 'attachment', 2, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-18 22:15:47'),
+(90, 7, 'auth.logout', 'user', 7, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-18 22:16:34'),
+(91, 4, 'auth.login', 'user', 4, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-18 22:16:45'),
+(92, 4, 'auth.logout', 'user', 4, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-18 22:17:35'),
+(93, 4, 'auth.login', 'user', 4, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-18 22:20:31'),
+(94, 4, 'auth.logout', 'user', 4, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-18 22:20:47'),
+(95, 4, 'auth.login', 'user', 4, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-18 22:23:15'),
+(96, 4, 'auth.logout', 'user', 4, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-18 22:23:21'),
+(97, NULL, 'auth.login_failed', NULL, NULL, '{\"email\":\"hildakimaro720@gmail.com\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-18 22:23:38'),
+(98, NULL, 'auth.login_failed', NULL, NULL, '{\"email\":\"hildakimaro720@gmail.com\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-18 22:23:42'),
+(99, NULL, 'auth.login_failed', NULL, NULL, '{\"email\":\"hildakimaro720@gmail.com\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-18 22:23:46'),
+(100, NULL, 'auth.login_locked', NULL, NULL, '{\"email\":\"hildakimaro720@gmail.com\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-18 22:23:50'),
+(101, NULL, 'auth.login_locked', NULL, NULL, '{\"email\":\"hildakimaro720@gmail.com\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-18 22:24:04'),
+(102, 2, 'auth.login', 'user', 2, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-18 22:24:25'),
+(103, 2, 'attachment.downloaded', 'attachment', 2, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-18 22:27:27'),
+(104, 2, 'attachment.downloaded', 'attachment', 2, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-18 22:31:49'),
+(105, 2, 'attachment.downloaded', 'attachment', 1, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-18 22:32:12'),
+(106, 2, 'auth.logout', 'user', 2, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-18 22:46:37'),
+(107, 2, 'auth.login', 'user', 2, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-18 22:47:57'),
+(108, 2, 'auth.logout', 'user', 2, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-18 22:48:04'),
+(109, 7, 'auth.login', 'user', 7, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-18 22:48:31'),
+(110, 7, 'auth.login', 'user', 7, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-18 23:22:42'),
+(111, 7, 'attachment.downloaded', 'attachment', 2, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-18 23:23:13'),
+(112, 7, 'auth.logout', 'user', 7, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-18 23:23:23'),
+(113, 2, 'auth.login', 'user', 2, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-18 23:27:12'),
+(114, 2, 'auth.logout', 'user', 2, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-18 23:39:52'),
+(115, 2, 'auth.login', 'user', 2, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-18 23:40:09'),
+(116, 2, 'auth.login', 'user', 2, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-19 08:39:37'),
+(117, 2, 'auth.logout', 'user', 2, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-19 09:02:37'),
+(118, 2, 'auth.login', 'user', 2, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-19 09:03:02'),
+(119, 2, 'auth.logout', 'user', 2, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-19 09:13:36'),
+(120, 2, 'auth.login', 'user', 2, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-19 09:14:17'),
+(121, 2, 'auth.login', 'user', 2, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-19 09:30:08'),
+(122, 2, 'auth.logout', 'user', 2, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-19 09:37:27'),
+(123, 7, 'auth.login', 'user', 7, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-19 09:37:41'),
+(124, 2, 'auth.logout', 'user', 2, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-19 10:01:03'),
+(125, NULL, 'auth.login_failed', NULL, NULL, '{\"email\":\"admin@gmail.com\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-05-19 10:17:01'),
+(126, 7, 'auth.login', 'user', 7, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-20 07:59:34'),
+(127, 7, 'auth.logout', 'user', 7, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-20 07:59:52'),
+(128, 7, 'auth.login', 'user', 7, '[]', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', '2026-05-20 09:23:15');
 
 -- --------------------------------------------------------
 
@@ -188,7 +259,8 @@ INSERT INTO `incidents` (`id`, `reference`, `reporter_id`, `category_id`, `sever
 (1, 'INC-2026-0001', 2, 5, 'Low', 'New', 'dfghjkdsvnds', 'wdaefkdgvfuigfuavufhveufguefvwqoihrw9grfwqoidfhpfgeqgf', 'wqef', 1, '2026-05-13 10:52:00', NULL, '2026-05-16 10:53:25', NULL, NULL, '2026-05-13 10:53:25', '2026-05-13 10:53:25'),
 (2, 'INC-2026-0002', 3, 4, 'Medium', 'New', 'DFCGVHJK', 'VDGFUIGASEUIFGEFG8E9TQBFPE89RTF89E2RFTVWEGF8LGFUQEV FL.TF', 'SGCYAGEFCOUAASDDGDFU', 1, '2026-05-13 13:44:00', NULL, '2026-05-14 13:45:13', NULL, NULL, '2026-05-13 13:45:13', '2026-05-13 13:45:13'),
 (3, 'INC-2026-0003', 2, 5, 'High', 'New', 'Phishing Email', 'This is affecting my student portal where by i my result have been exposed tom the public', 'Student Portal', 1, '2026-05-13 13:49:00', NULL, '2026-05-13 21:50:29', NULL, NULL, '2026-05-13 13:50:29', '2026-05-13 13:50:29'),
-(4, 'INC-2026-0004', 4, 1, 'Medium', 'In Progress', 'Phishing', 'I received an email that was a scam and opened it stf', 'Email system', 1, '2026-05-13 15:59:00', 7, '2026-05-14 16:06:44', NULL, NULL, '2026-05-13 16:06:44', '2026-05-13 16:29:47');
+(4, 'INC-2026-0004', 4, 1, 'Medium', 'In Progress', 'Phishing', 'I received an email that was a scam and opened it stf', 'Email system', 1, '2026-05-13 15:59:00', 7, '2026-05-14 16:06:44', NULL, NULL, '2026-05-13 16:06:44', '2026-05-13 16:29:47'),
+(5, 'INC-2026-0005', 8, 4, 'Critical', 'Acknowledged', 'ISM OVERLOAD INTERNAL SERVER ERROR', 'I TRIERPSFBKJBDSFNIFDSKLFGNPOABGVOIDSAFGV;DABGVIADBGV/KDSANGV/OADBGFVRAKLGSFBVKSDPFVKFDSBVLKFBVKABFVSLBLBVJBSDFV.BSFEVSFDGVDSFBAVIOBAFVBSODKBVIDABSGV', 'ISMS', 1, '2026-05-18 18:09:00', 6, '2026-05-18 20:11:07', NULL, NULL, '2026-05-18 18:11:07', '2026-05-18 18:13:29');
 
 -- --------------------------------------------------------
 
@@ -248,7 +320,12 @@ CREATE TABLE `settings` (
 
 INSERT INTO `settings` (`setting_key`, `setting_value`, `description`, `updated_at`) VALUES
 ('max_upload_mb', '10', 'Maximum file upload size in MB', '2026-05-13 10:47:16'),
+('notify_confirmation', '0', NULL, '2026-05-16 14:22:51'),
 ('notify_it_email', '', 'IT Security team notification email', '2026-05-13 10:47:16'),
+('notify_note_added', '0', NULL, '2026-05-16 14:22:54'),
+('notify_officer_assigned', '0', NULL, '2026-05-16 14:22:53'),
+('notify_on_submission', '0', NULL, '2026-05-16 14:22:50'),
+('notify_status_change', '0', NULL, '2026-05-16 14:22:52'),
 ('session_timeout', '300', 'Session timeout in seconds (30 min)', '2026-05-13 16:34:33'),
 ('sla_critical_hours', '2', 'SLA hours for Critical severity incidents', '2026-05-13 10:47:16'),
 ('sla_high_hours', '8', 'SLA hours for High severity incidents', '2026-05-13 10:47:16'),
@@ -289,7 +366,8 @@ INSERT INTO `users` (`id`, `full_name`, `email`, `password`, `role`, `department
 (3, 'George Newton', 'aniversnormy4@gmail.com', '$2y$12$vKeeGDNVGyB3j/JAgCWYse/9jLXJKlod26UfEKgFE3fBEMGZ4B3M2', 'reporter', 'ICT', '+255784693424', 1, '2026-05-13 13:43:52', '2026-05-13 13:43:52'),
 (4, 'Ms Hilda Chuwa', 'hildakimaro720@gmail.com', '$2y$12$QuZ6NL7USCXJLA1iBApB4eEOfygJswfebry5d1TZnacnvO8RzwdI.', 'reporter', 'ICT', '+255762900416', 1, '2026-05-13 15:56:56', '2026-05-13 15:56:56'),
 (6, 'Ashraf Jafary', 'ashrafjafary64@gmail.com', '12345678', 'officer', 'ICT', '+255659263416', 1, '2026-05-13 16:20:50', '2026-05-13 16:20:50'),
-(7, 'Dickson Chuwa', 'profchuwa7@gmail.com', '$2y$12$kAn.bgFh7X/WSKJpHBO59ufcm3DnYpQG3xNmS7XcJvsEo/rmTO29y', 'officer', 'EDUCATION', '+255714940334', 1, '2026-05-13 16:25:50', '2026-05-13 16:27:20');
+(7, 'Dickson Chuwa', 'profchuwa7@gmail.com', '$2y$12$kAn.bgFh7X/WSKJpHBO59ufcm3DnYpQG3xNmS7XcJvsEo/rmTO29y', 'officer', 'EDUCATION', '+255714940334', 1, '2026-05-13 16:25:50', '2026-05-13 16:27:20'),
+(8, 'Davson Mollel', 'davsonmollel2@gmail.com', '$2y$12$XxFoUakIxXCtEDOvfTri1OFQMjLdpeTxyCh2iIl.Pkpn/j8HFk1Lm', 'reporter', 'IT', '255659263416', 1, '2026-05-18 18:08:35', '2026-05-18 18:08:35');
 
 --
 -- Indexes for dumped tables
@@ -368,13 +446,13 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `attachments`
 --
 ALTER TABLE `attachments`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `audit_log`
 --
 ALTER TABLE `audit_log`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=59;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=129;
 
 --
 -- AUTO_INCREMENT for table `categories`
@@ -386,7 +464,7 @@ ALTER TABLE `categories`
 -- AUTO_INCREMENT for table `incidents`
 --
 ALTER TABLE `incidents`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `notes`
@@ -404,7 +482,7 @@ ALTER TABLE `notifications`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- Constraints for dumped tables

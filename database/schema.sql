@@ -1,5 +1,5 @@
 -- ============================================================
--- CIRMS - Campus Cyber Incident Reporting & Management System
+-- IRS - Institute of Accountancy Arusha Reporting System
 -- Database Schema
 -- ============================================================
 
@@ -35,15 +35,19 @@ CREATE TABLE categories (
     created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- Seed default categories
+-- Seed IAA student ICT incident categories
 INSERT INTO categories (name, description) VALUES
-('Phishing & Social Engineering',   'Deceptive emails, fake websites, or manipulation to steal credentials'),
-('Malware & Ransomware',            'Virus, worm, trojan, or ransomware infection on campus devices'),
-('Unauthorized Access',             'Account compromise or unauthorized login to systems'),
-('Network Intrusion / DoS',         'Suspicious network activity or denial-of-service attacks'),
-('Data Breach & Data Loss',         'Accidental or deliberate exposure of sensitive data'),
-('System Misuse & Policy Violation','Abuse of campus resources or violation of IT policy'),
-('Other / Unknown',                 'Incidents that do not fit the above categories');
+('Account and Authentication Issues',      'Login problems, password resets, account lockouts, 2FA issues, and session problems for ISMS and eLearning portals'),
+('Course Access Problems',                 'Missing enrolled courses, permission denied errors, and course assignment issues on the eLearning platform (Moodle)'),
+('Assignment and Submission Issues',       'File upload failures, submission visibility problems, file format/size rejections, and duplicate submissions on eLearning'),
+('Online Quiz and Examination Issues',     'Quiz loading failures, unexpected auto-submissions, timer malfunctions, browser crashes, and network interruptions during online assessments'),
+('Registration and Academic Record Issues','Semester/course registration errors, missing grades or results, GPA/CGPA calculation errors, transcript problems, and timetable issues in ISMS'),
+('Fee Payment and Financial Issues',       'Unprocessed payments, invoice/receipt generation failures, financial clearance problems, and incorrect fee balances in ISMS'),
+('System Performance and Availability',   'ISMS or eLearning portal slow loading, inaccessible systems, frequent downtime, server timeout errors, and Error 500 issues'),
+('Mobile and Device Compatibility',        'Portal not working on smartphones, mobile upload failures, browser compatibility issues, and broken layouts on mobile devices'),
+('Email and Notification Issues',          'Missing system notifications, absent assignment alerts, password reset emails not received, and delayed communication messages'),
+('User Profile and Data Issues',           'Incorrect student profile information, inability to update profile, missing passport/photo upload, and wrong programme or semester details'),
+('Connectivity and Access Issues',         'VPN or campus network access problems, slow internet affecting uploads, Wi-Fi authentication failure, and access denied from external network');
 
 -- ============================================================
 -- INCIDENTS TABLE

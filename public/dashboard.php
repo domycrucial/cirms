@@ -285,9 +285,8 @@ include __DIR__ . '/../includes/header.php';
                 </strong>
             </div>
             <div style="height:8px;background:var(--bg);border-radius:99px;overflow:hidden;">
-                <div style="height:100%;width:<?= $resolvedPct ?>%;
-                            background:linear-gradient(90deg,#22c55e,#16a34a);
-                            border-radius:99px;transition:width 1s ease;"></div>
+                <!-- Fill width is clamped to 0–100 so it can never overflow the track -->
+                <div style="height:100%;width:<?= max(0, min(100, (int) $resolvedPct)) ?>%;background:linear-gradient(90deg,#22c55e,#16a34a);border-radius:99px;transition:width 1s ease;"></div>
             </div>
             <div class="text-muted mt-1" style="font-size:.76rem;">
                 <?= $stats['resolved'] ?> of <?= $stats['total'] ?> incidents resolved or closed

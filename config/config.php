@@ -34,8 +34,8 @@ define('DB_PASS',    $dbSettings['pass']);
 define('DB_CHARSET', $dbSettings['charset']);
 
 // ----- App -----
-define('APP_NAME',      'CIRMS');
-define('APP_FULL_NAME', 'Campus Cyber Incident Reporting & Management System');
+define('APP_NAME',      'IRS');
+define('APP_FULL_NAME', 'Institute of Accountancy Arusha Reporting System');
 
 $app_url_manual = ''; // Set to 'http://localhost/cirmsv2' if auto-detect fails
 if ($app_url_manual !== '') {
@@ -103,7 +103,7 @@ define('SMTP_PORT',      587);                  // 587 = STARTTLS (correct for G
 define('SMTP_USER',      'chuwadominic52@gmail.com');// <-- YOUR Gmail address here
 define('SMTP_PASS',      'rugg vgxp edkq lqjf');// <-- YOUR 16-char App Password here
 define('SMTP_FROM',      'chuwadominic52@gmail.com');// <-- same as SMTP_USER for Gmail
-define('SMTP_FROM_NAME', 'CIRMS Notifications');
+define('SMTP_FROM_NAME', 'IRS Notifications');
 define('NOTIFY_IT_EMAIL','godsplancharity255@gmail.com'); // <-- IT officer/team email
 
 // ----- SLA (hours by severity) -----
